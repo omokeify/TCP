@@ -9,7 +9,8 @@ import { Application, ApplicationStatus, InviteCode, ClassConfig, DEFAULT_CLASS_
 const APPS_KEY = 'blink_applications';
 const CODES_KEY = 'blink_codes';
 const AUTH_KEY = 'blink_admin_auth';
-const CONFIG_KEY = 'blink_class_config';
+// Updated key version to force refresh of config on devices with old cached state
+const CONFIG_KEY = 'blink_class_config_v2';
 const DB_URL_KEY = 'blink_db_url';
 
 // Helper to simulate delay

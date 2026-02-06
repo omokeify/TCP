@@ -96,7 +96,7 @@ export const Apply: React.FC = () => {
   }
 
   return (
-    <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 w-full">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 w-full">
       {/* Info Column */}
       <div className="space-y-6 flex flex-col justify-center order-1 lg:order-none">
         <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-[#3B472F] leading-tight">
