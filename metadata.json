@@ -1,0 +1,7 @@
+{
+  "name": "TCP - Exclusive Class Access",
+  "description": "A liquid-glass designed, application-based invite platform for gated class access.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
