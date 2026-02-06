@@ -10,6 +10,7 @@ export const AdminDashboard: React.FC = () => {
   const [filter, setFilter] = useState<ApplicationStatus | 'all'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [isDark, setIsDark] = useState(false);
+  const [reminding, setReminding] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -58,6 +59,19 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleTriggerReminders = async () => {
+    if (!window.confirm("Send reminder emails to all approved users with valid codes?")) return;
+    setReminding(true);
+    try {
+        const res = await MockService.triggerReminders();
+        alert(`Successfully sent reminders to ${res.sent} users.`);
+    } catch (e) {
+        alert("Failed to send reminders.");
+    } finally {
+        setReminding(false);
+    }
+  };
+
   const filteredApps = apps.filter(app => {
     const matchesFilter = filter === 'all' || app.status === filter;
     const matchesSearch = app.email.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -87,6 +101,14 @@ export const AdminDashboard: React.FC = () => {
           <p className="text-ash dark:text-chalk/60 mt-1">Review and approve pending requests for class access.</p>
         </div>
         <div className="flex items-center gap-3">
+          <button 
+             onClick={handleTriggerReminders}
+             disabled={reminding}
+             className="flex items-center gap-2 px-4 py-2 bg-accent/20 text-primary dark:text-accent border-2 border-accent rounded-lg font-semibold hover:bg-accent hover:text-primary transition-all disabled:opacity-50"
+          >
+             <span className="material-icons-outlined text-sm">notifications_active</span>
+             {reminding ? 'Sending...' : 'Send Reminders'}
+          </button>
           <button className="flex items-center gap-2 px-4 py-2 border-2 border-primary dark:border-accent text-primary dark:text-accent rounded-lg font-semibold hover:bg-primary hover:text-white dark:hover:bg-accent dark:hover:text-primary transition-all">
             <span className="material-icons-outlined text-sm">download</span>
             Export List

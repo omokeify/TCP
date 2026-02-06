@@ -6,13 +6,18 @@ import { ClassConfig, DEFAULT_CLASS_INFO } from '../types';
 export const ClassPortal: React.FC = () => {
   const navigate = useNavigate();
   const [classConfig, setClassConfig] = useState<ClassConfig | null>(null);
+  const [userCode, setUserCode] = useState<string>('');
 
   useEffect(() => {
     const hasAccess = sessionStorage.getItem('blink_class_access');
+    const code = sessionStorage.getItem('blink_user_code');
+    
     if (!hasAccess) {
       navigate('/access');
       return;
     }
+    
+    if (code) setUserCode(code);
 
     const loadConfig = async () => {
         const config = await MockService.getClassConfig();
@@ -24,7 +29,107 @@ export const ClassPortal: React.FC = () => {
 
   const handleSignOut = () => {
     sessionStorage.removeItem('blink_class_access');
+    sessionStorage.removeItem('blink_user_code');
     navigate('/access');
+  };
+
+  const generateReferralLink = () => {
+    if (!userCode) return '';
+    // Construct absolute URL
+    const baseUrl = window.location.href.split('#')[0];
+    return `${baseUrl}#/apply?ref=${userCode}`;
+  };
+
+  const copyReferralLink = () => {
+    const link = generateReferralLink();
+    if (link) {
+      navigator.clipboard.writeText(link);
+      alert("Referral link copied to clipboard!");
+    }
+  };
+
+  // --- Calendar Logic ---
+  
+  const parseDates = () => {
+    if (!classConfig?.date || !classConfig?.time) return null;
+    
+    // Attempt basic parsing for "October 15, 2024" and "10:00 AM - 2:00 PM PST"
+    try {
+        const dateStr = classConfig.date; // e.g. "October 15, 2024"
+        const timeStr = classConfig.time; // e.g. "10:00 AM - 2:00 PM PST"
+        
+        // Extract start/end time
+        // Matches "10:00 AM" or "14:00"
+        const times = timeStr.match(/(\d{1,2}:\d{2}\s?(?:AM|PM)?)/gi);
+        
+        if (!times || times.length < 1) return null;
+
+        const startDateTimeStr = `${dateStr} ${times[0]}`;
+        const endDateTimeStr = times.length > 1 ? `${dateStr} ${times[1]}` : startDateTimeStr;
+
+        const start = new Date(startDateTimeStr);
+        // Default duration 1 hour if no end time
+        const end = times.length > 1 ? new Date(endDateTimeStr) : new Date(start.getTime() + 60*60*1000);
+
+        if (isNaN(start.getTime())) return null;
+
+        return { start, end };
+    } catch (e) {
+        return null;
+    }
+  };
+
+  const handleDownloadIcs = () => {
+     const dates = parseDates();
+     if (!dates || !classConfig) {
+         alert("Could not generate calendar file. Date format may be invalid.");
+         return;
+     }
+
+     const formatDate = (date: Date) => date.toISOString().replace(/-|:|\.\d+/g, "");
+
+     const icsContent = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//TCP//Blink Class//EN",
+        "BEGIN:VEVENT",
+        `UID:${Date.now()}@tcp.studio`,
+        `DTSTAMP:${formatDate(new Date())}`,
+        `DTSTART:${formatDate(dates.start)}`,
+        `DTEND:${formatDate(dates.end)}`,
+        `SUMMARY:${classConfig.title}`,
+        `DESCRIPTION:${classConfig.description.replace(/\n/g, "\\n")}\\n\\nInstructor: ${classConfig.instructor}`,
+        `LOCATION:${classConfig.location}`,
+        "END:VEVENT",
+        "END:VCALENDAR"
+     ].join("\r\n");
+
+     const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+     const link = document.createElement('a');
+     link.href = window.URL.createObjectURL(blob);
+     link.setAttribute('download', 'class_schedule.ics');
+     document.body.appendChild(link);
+     link.click();
+     document.body.removeChild(link);
+  };
+
+  const handleGoogleCalendar = () => {
+     const dates = parseDates();
+     if (!dates || !classConfig) {
+        alert("Could not open Google Calendar. Date format may be invalid.");
+        return;
+     }
+     
+     const formatDate = (date: Date) => date.toISOString().replace(/-|:|\.\d+/g, "");
+     
+     const url = new URL("https://calendar.google.com/calendar/render");
+     url.searchParams.append("action", "TEMPLATE");
+     url.searchParams.append("text", classConfig.title);
+     url.searchParams.append("dates", `${formatDate(dates.start)}/${formatDate(dates.end)}`);
+     url.searchParams.append("details", `${classConfig.description}\n\nInstructor: ${classConfig.instructor}`);
+     url.searchParams.append("location", classConfig.location || "");
+
+     window.open(url.toString(), '_blank');
   };
 
   if (!classConfig) {
@@ -39,10 +144,10 @@ export const ClassPortal: React.FC = () => {
   }
 
   const isLink = (str?: string) => str?.startsWith('http') || str?.startsWith('www');
+  const hasCalendarData = !!parseDates();
 
   return (
     <div className="min-h-screen w-full font-sans text-primary relative">
-      {/* Custom Styles for this page specifically */}
       <style>{`
         .liquid-glass {
             background: rgba(255, 255, 255, 0.45);
@@ -56,7 +161,6 @@ export const ClassPortal: React.FC = () => {
             border: 1px solid rgba(255, 255, 255, 0.5);
             border-radius: 1.5rem;
         }
-        /* Override body bg for this page context if needed, though we use a wrapper */
       `}</style>
 
       {/* Navbar */}
@@ -99,7 +203,6 @@ export const ClassPortal: React.FC = () => {
         </header>
 
         <div className="liquid-glass rounded-[2.5rem] p-8 md:p-12 overflow-hidden relative">
-            {/* Background decorative blob */}
             <div className="absolute -top-20 -right-20 w-64 h-64 bg-accent rounded-full blur-[80px] opacity-40 pointer-events-none"></div>
             
             <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12">
@@ -136,6 +239,26 @@ export const ClassPortal: React.FC = () => {
                         </div>
                     </div>
 
+                    {/* Calendar Buttons */}
+                    {hasCalendarData && (
+                        <div className="flex flex-wrap gap-4 mb-10">
+                             <button 
+                                onClick={handleDownloadIcs}
+                                className="flex items-center gap-2 px-5 py-3 bg-white/60 hover:bg-white border border-white rounded-xl text-primary font-bold transition-all shadow-sm"
+                             >
+                                <span className="material-icons-outlined text-lg">download</span>
+                                Download Calendar (.ics)
+                             </button>
+                             <button 
+                                onClick={handleGoogleCalendar}
+                                className="flex items-center gap-2 px-5 py-3 bg-white/60 hover:bg-white border border-white rounded-xl text-primary font-bold transition-all shadow-sm"
+                             >
+                                <span className="material-icons-outlined text-lg">event</span>
+                                Add to Google Calendar
+                             </button>
+                        </div>
+                    )}
+
                     <div className="bg-primary text-white rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl shadow-primary/20">
                         <div className="flex items-center gap-4 w-full md:w-auto">
                             <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center shrink-0">
@@ -168,7 +291,6 @@ export const ClassPortal: React.FC = () => {
                         <p className="text-[10px] font-bold uppercase tracking-wider text-ash mb-6">Instructor</p>
                         <div className="flex items-center gap-4 mb-4">
                             <div className="w-16 h-16 rounded-2xl overflow-hidden bg-eucalyptus border-4 border-white shrink-0 flex items-center justify-center">
-                                {/* Placeholder for instructor image since it's not in core config yet, defaulting to icon */}
                                 <span className="material-icons-outlined text-3xl text-primary">person</span>
                             </div>
                             <div>
@@ -179,6 +301,28 @@ export const ClassPortal: React.FC = () => {
                         <p className="text-xs text-ash leading-relaxed italic border-l-2 border-accent pl-3">
                             "Great design is eliminating all unnecessary details." — Join us for an immersive session.
                         </p>
+                    </div>
+
+                    {/* Referral Card (New) */}
+                    <div className="glass-card p-8 bg-gradient-to-br from-white/70 to-accent/20">
+                        <div className="flex items-center gap-2 mb-4">
+                             <span className="material-icons-outlined text-primary">campaign</span>
+                             <p className="text-[10px] font-bold uppercase tracking-wider text-ash">Invite a Friend</p>
+                        </div>
+                        <p className="text-sm font-medium text-primary mb-4">
+                            Want to invite a friend? Share your referral link below.
+                        </p>
+                        <div className="flex items-center gap-2 bg-white/50 p-2 rounded-xl border border-white/40">
+                             <code className="text-xs text-ash flex-1 truncate px-2 font-mono">
+                                 {generateReferralLink()}
+                             </code>
+                             <button 
+                                onClick={copyReferralLink}
+                                className="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                             >
+                                <span className="material-icons-outlined text-sm">content_copy</span>
+                             </button>
+                        </div>
                     </div>
 
                     {/* Extra Notes */}
@@ -194,7 +338,6 @@ export const ClassPortal: React.FC = () => {
                                 <p className="text-sm text-ash italic">No additional notes.</p>
                             )}
                             
-                            {/* Static filler items to match design density if notes are short */}
                             <div className="flex gap-3 text-sm font-medium text-primary opacity-60">
                                 <span className="material-icons-outlined text-sm mt-0.5 shrink-0">check_circle</span>
                                 <span>Q&A session will follow the main lecture.</span>

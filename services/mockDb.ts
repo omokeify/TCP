@@ -212,5 +212,23 @@ export const MockService = {
 
   logoutAdmin: () => {
     localStorage.removeItem(AUTH_KEY);
+  },
+
+  // --- Reminders ---
+
+  triggerReminders: async (): Promise<{ sent: number }> => {
+    const dbUrl = MockService.getDbUrl();
+    if (dbUrl) {
+       const res = await MockService.callScript('trigger_reminders', 'POST');
+       return res;
+    }
+
+    // Local simulation
+    await delay(1000);
+    const codes = await MockService.getCodes();
+    const usedCodes = codes.filter(c => c.used);
+    
+    console.log(`[MOCK REMINDER SERVICE] Sending reminders to ${usedCodes.length} users.`);
+    return { sent: usedCodes.length };
   }
 };

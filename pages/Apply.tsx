@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { GlassCard } from '../components/GlassCard';
 import { Button } from '../components/Button';
 import { DEFAULT_CLASS_INFO, ClassConfig, TaskConfig } from '../types';
@@ -7,6 +7,7 @@ import { MockService } from '../services/mockDb';
 
 export const Apply: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [classInfo, setClassInfo] = useState<ClassConfig>(DEFAULT_CLASS_INFO);
   const [formData, setFormData] = useState({
@@ -56,10 +57,15 @@ export const Apply: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    
+    // Get referral ID from URL
+    const referrerId = searchParams.get('ref') || undefined;
+
     try {
       await MockService.submitApplication({
         ...formData,
-        taskProofs
+        taskProofs,
+        referrerId
       });
       navigate('/status');
     } catch (error) {
@@ -83,7 +89,7 @@ export const Apply: React.FC = () => {
              
              <div className="mt-8 p-6 bg-[#3B472F]/5 rounded-2xl border border-[#3B472F]/10">
                  <p className="text-[#3B472F] font-semibold text-lg">Applications are currently closed.</p>
-                 <p className="text-[#686868] mt-2">Please check back later or wait for the next cohort to open.</p>
+                 <p className="text--[#686868] mt-2">Please check back later or wait for the next cohort to open.</p>
              </div>
         </div>
     );

@@ -13,6 +13,7 @@ export interface Application {
   taskProofs: Record<string, string>; // Map of taskId -> user input
   status: ApplicationStatus;
   submittedAt: string; // ISO Date string
+  referrerId?: string; // Tracking who referred this applicant
 }
 
 export interface InviteCode {

@@ -27,6 +27,8 @@ export const Access: React.FC = () => {
       if (result.valid) {
         // Set session and redirect to the class portal
         sessionStorage.setItem('blink_class_access', 'true');
+        // Store code to identify user for referrals/calendar features
+        sessionStorage.setItem('blink_user_code', cleanCode);
         navigate('/portal');
       } else {
         // Show specific error message from the service (e.g. "Expired" vs "Invalid")
