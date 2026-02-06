@@ -87,8 +87,13 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         {children}
       </main>
 
-      <footer className="w-full max-w-5xl mt-12 py-6 text-center text-[#686868] text-xs">
+      <footer className="w-full max-w-5xl mt-12 py-6 text-center text-[#686868] text-xs flex flex-col items-center gap-2">
         <p>&copy; {new Date().getFullYear()} TCP Studio. All rights reserved.</p>
+        {!location.pathname.startsWith('/admin') && (
+            <Link to="/admin" className="opacity-20 hover:opacity-100 transition-opacity uppercase tracking-widest text-[10px] font-bold">
+                Admin Portal
+            </Link>
+        )}
       </footer>
     </div>
   );

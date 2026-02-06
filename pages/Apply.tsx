@@ -74,12 +74,10 @@ export const Apply: React.FC = () => {
     <div className="grid lg:grid-cols-2 gap-8 w-full">
       {/* Info Column */}
       <div className="space-y-6 flex flex-col justify-center">
-        <h1 className="text-5xl lg:text-6xl font-bold text-[#3B472F] leading-tight">
-          Empowering <br/>
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#3B472F] to-[#686868]">Lives through</span> <br/>
-          Innovations.
+        <h1 className="text-4xl lg:text-6xl font-bold text-[#3B472F] leading-tight">
+          {classInfo.title}
         </h1>
-        <p className="text-lg text-[#686868] max-w-md leading-relaxed">
+        <p className="text-lg text-[#686868] max-w-md leading-relaxed whitespace-pre-wrap">
           {classInfo.description}
         </p>
 

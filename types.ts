@@ -32,10 +32,19 @@ export interface TaskConfig {
   proofType: 'text' | 'link' | 'username' | 'image';
 }
 
+export interface ClassResource {
+  id: string;
+  title: string;
+  description: string;
+  url: string;
+  type: 'video' | 'link' | 'stream' | 'community' | 'document';
+}
+
 export interface ClassConfig {
   title: string;
   description: string;
   tasks: TaskConfig[];
+  resources: ClassResource[];
 }
 
 export const DEFAULT_CLASS_INFO: ClassConfig = {
@@ -52,8 +61,7 @@ export const DEFAULT_CLASS_INFO: ClassConfig = {
     {
       id: "t2",
       description: "Share why you want to join (min 50 words)",
-      requiresProof: false, // This is handled by standard form, but conceptually could be here. 
-      // NOTE: standard form has 'whyJoin'. We'll keep standard fields separate.
+      requiresProof: false, // This is handled by standard form
       proofType: "text"
     },
     {
@@ -62,6 +70,29 @@ export const DEFAULT_CLASS_INFO: ClassConfig = {
       requiresProof: true,
       proofLabel: "GitHub Graph",
       proofType: "image"
+    }
+  ],
+  resources: [
+    {
+      id: "r1",
+      title: "Live Class Session",
+      description: "Join the weekly live stream where we dissect advanced topics. Next Call: Friday, 10:00 AM PST.",
+      url: "https://meet.google.com/",
+      type: "stream"
+    },
+    {
+      id: "r2",
+      title: "Community Discord",
+      description: "Chat with other approved members and get direct feedback in the #exclusive channel.",
+      url: "https://discord.com/",
+      type: "community"
+    },
+    {
+      id: "r3",
+      title: "Course Syllabus",
+      description: "Download the PDF breakdown of all 8 weeks of content.",
+      url: "#",
+      type: "document"
     }
   ]
 };

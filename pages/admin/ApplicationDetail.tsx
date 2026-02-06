@@ -52,6 +52,7 @@ export const ApplicationDetail: React.FC = () => {
         const newCode = await MockService.generateCode(app.id, app.email);
         setGeneratedCode(newCode.code);
         setApp(prev => prev ? ({ ...prev, status }) : null);
+        alert(`Application Approved!\n\nEmail sent to ${app.email} with code: ${newCode.code}`);
       } else {
         navigate('/admin/applications');
       }
@@ -172,14 +173,13 @@ export const ApplicationDetail: React.FC = () => {
                         <span className="material-icons-outlined text-green-600">check_circle</span>
                         <h3 className="font-bold text-primary dark:text-accent">Access Granted</h3>
                     </div>
-                    {(generatedCode || existingCode) && (
-                        <div className="mt-4 p-4 bg-white/50 dark:bg-black/20 rounded-xl text-center">
-                            <p className="text-xs text-ash dark:text-chalk/60 uppercase font-bold mb-1">Invite Code</p>
-                            <p className="font-mono text-xl tracking-widest text-primary dark:text-white font-bold">
-                                {generatedCode || existingCode?.code}
-                            </p>
-                        </div>
-                    )}
+                    <div className="mt-4 p-4 bg-white/50 dark:bg-black/20 rounded-xl text-center">
+                        <p className="text-xs text-ash dark:text-chalk/60 uppercase font-bold mb-1">Invite Code</p>
+                        <p className="font-mono text-xl tracking-widest text-primary dark:text-white font-bold">
+                            {generatedCode || existingCode?.code}
+                        </p>
+                        <p className="text-xs text-ash dark:text-chalk/60 mt-2">Sent to {app.email}</p>
+                    </div>
                 </div>
             )}
          </div>

@@ -28,6 +28,9 @@ function App() {
           <Route path="/admin/applications" element={<AdminDashboard />} />
           <Route path="/admin/applications/:id" element={<ApplicationDetail />} />
           <Route path="/admin/settings" element={<AdminSettings />} />
+
+          {/* Catch-all for unknown routes */}
+          <Route path="*" element={<Navigate to="/apply" replace />} />
         </Routes>
       </Layout>
     </Router>

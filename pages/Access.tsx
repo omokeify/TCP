@@ -15,17 +15,25 @@ export const Access: React.FC = () => {
     setIsChecking(true);
     setError('');
 
+    const cleanCode = code.trim().toUpperCase();
+
+    if (!cleanCode) {
+      setError('Please enter a code.');
+      return;
+    }
+
     try {
-      const isValid = await MockService.validateAndUseCode(code.trim().toUpperCase());
-      if (isValid) {
-        // In a real app, set a session token here
+      const result = await MockService.validateAndUseCode(cleanCode);
+      if (result.valid) {
+        // Set session and redirect to the class content page configured by admin
         sessionStorage.setItem('blink_class_access', 'true');
         navigate('/content');
       } else {
-        setError('Invalid or expired invitation code.');
+        // Show specific error message from the service (e.g. "Expired" vs "Invalid")
+        setError(result.message || 'Invalid or expired invitation code.');
       }
     } catch (err) {
-      setError('An error occurred. Please try again.');
+      setError('Unable to verify code. Please try again later.');
     } finally {
       setIsChecking(false);
     }
@@ -43,14 +51,14 @@ export const Access: React.FC = () => {
              <input 
               type="text" 
               className="w-full text-center text-2xl tracking-widest font-mono uppercase px-4 py-4 rounded-xl bg-white/50 border border-transparent focus:border-[#3B472F] focus:bg-white focus:ring-0 transition-all outline-none text-[#3B472F] placeholder-gray-400"
-              placeholder="BLINK-XXXXXX"
+              placeholder="TCP-XXXXXX"
               value={code}
               onChange={(e) => setCode(e.target.value)}
             />
           </div>
 
           {error && (
-            <div className="p-3 rounded-lg bg-red-100 text-red-600 text-sm text-center font-medium">
+            <div className="p-3 rounded-lg bg-red-100 text-red-600 text-sm text-center font-medium animate-pulse">
               {error}
             </div>
           )}
@@ -60,7 +68,7 @@ export const Access: React.FC = () => {
             variant="secondary" 
             className="w-full justify-center" 
             isLoading={isChecking}
-            disabled={!code}
+            disabled={!code || isChecking}
           >
             Unlock Access
           </Button>

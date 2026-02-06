@@ -45,11 +45,15 @@ export const AdminDashboard: React.FC = () => {
   };
 
   const handleStatusUpdate = async (id: string, status: ApplicationStatus) => {
-    if (window.confirm(`Are you sure you want to mark this as ${status}?`)) {
+    const app = apps.find(a => a.id === id);
+    if (!app) return;
+
+    if (window.confirm(`Are you sure you want to mark ${app.email} as ${status}?`)) {
         await MockService.updateApplicationStatus(id, status);
+        
         if (status === ApplicationStatus.APPROVED) {
-            const app = apps.find(a => a.id === id);
-            if (app) await MockService.generateCode(app.id, app.email);
+            await MockService.generateCode(app.id, app.email);
+            alert(`Application Approved!\n\nAn invitation code has been automatically generated and sent to ${app.email}.`);
         }
         await loadData();
     }
