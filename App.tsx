@@ -4,7 +4,7 @@ import { Layout } from './components/Layout';
 import { Apply } from './pages/Apply';
 import { Status } from './pages/Status';
 import { Access } from './pages/Access';
-import { ClassContent } from './pages/ClassContent';
+import { ClassPortal } from './pages/ClassPortal';
 import { AdminLogin } from './pages/admin/AdminLogin';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { ApplicationDetail } from './pages/admin/ApplicationDetail';
@@ -20,7 +20,10 @@ function App() {
           <Route path="/apply" element={<Apply />} />
           <Route path="/status" element={<Status />} />
           <Route path="/access" element={<Access />} />
-          <Route path="/content" element={<ClassContent />} />
+          <Route path="/portal" element={<ClassPortal />} />
+
+          {/* Legacy redirect */}
+          <Route path="/content" element={<Navigate to="/portal" replace />} />
 
           {/* Admin Flow */}
           <Route path="/admin" element={<Navigate to="/admin/applications" replace />} />

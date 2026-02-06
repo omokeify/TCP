@@ -70,6 +70,25 @@ export const Apply: React.FC = () => {
     }
   };
 
+  // If applications are closed (or default false), show the "Closed" view
+  if (!classInfo.acceptingApplications) {
+    return (
+        <div className="flex flex-col items-center justify-center text-center max-w-3xl mx-auto space-y-8 py-10">
+             <h1 className="text-5xl lg:text-7xl font-bold text-[#3B472F] leading-tight">
+                {classInfo.title}
+             </h1>
+             <p className="text-xl text-[#686868] max-w-2xl leading-relaxed whitespace-pre-wrap">
+                {classInfo.description}
+             </p>
+             
+             <div className="mt-8 p-6 bg-[#3B472F]/5 rounded-2xl border border-[#3B472F]/10">
+                 <p className="text-[#3B472F] font-semibold text-lg">Applications are currently closed.</p>
+                 <p className="text-[#686868] mt-2">Please check back later or wait for the next cohort to open.</p>
+             </div>
+        </div>
+    );
+  }
+
   return (
     <div className="grid lg:grid-cols-2 gap-8 w-full">
       {/* Info Column */}

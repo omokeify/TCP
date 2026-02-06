@@ -25,9 +25,9 @@ export const Access: React.FC = () => {
     try {
       const result = await MockService.validateAndUseCode(cleanCode);
       if (result.valid) {
-        // Set session and redirect to the class content page configured by admin
+        // Set session and redirect to the class portal
         sessionStorage.setItem('blink_class_access', 'true');
-        navigate('/content');
+        navigate('/portal');
       } else {
         // Show specific error message from the service (e.g. "Expired" vs "Invalid")
         setError(result.message || 'Invalid or expired invitation code.');

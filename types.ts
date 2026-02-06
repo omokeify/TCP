@@ -43,13 +43,28 @@ export interface ClassResource {
 export interface ClassConfig {
   title: string;
   description: string;
+  acceptingApplications: boolean;
   tasks: TaskConfig[];
   resources: ClassResource[];
+  // Portal Specific Fields
+  date?: string;
+  time?: string;
+  location?: string;
+  instructor?: string;
+  extraNotes?: string;
+  lastUpdated?: string;
 }
 
 export const DEFAULT_CLASS_INFO: ClassConfig = {
   title: "Advanced React Patterns Masterclass",
   description: "An exclusive, invite-only deep dive into modern component architecture. Limited seats available.",
+  acceptingApplications: false,
+  date: "October 15, 2024",
+  time: "10:00 AM - 2:00 PM PST",
+  location: "https://zoom.us/j/123456789",
+  instructor: "Sarah Drasner (Guest)",
+  extraNotes: "Please prepare your local environment with Node.js v18+ and VS Code before joining. The Zoom link will be active 15 minutes prior.",
+  lastUpdated: new Date().toLocaleDateString(),
   tasks: [
     {
       id: "t1",

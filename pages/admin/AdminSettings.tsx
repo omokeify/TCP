@@ -114,6 +114,27 @@ export const AdminSettings: React.FC = () => {
         />
       </div>
 
+       {/* Application Toggle */}
+       <div className="bg-white dark:bg-white/5 p-6 rounded-2xl shadow-sm border border-chalk dark:border-white/10 flex items-center justify-between">
+          <div>
+              <h2 className="text-lg font-bold text-primary dark:text-white">Open Applications</h2>
+              <p className="text-sm text-ash dark:text-chalk/60">
+                  {config.acceptingApplications 
+                    ? "Applications are open. The form is visible on the landing page." 
+                    : "Applications are closed. The form is hidden on the landing page."}
+              </p>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input 
+                type="checkbox" 
+                className="sr-only peer"
+                checked={!!config.acceptingApplications}
+                onChange={(e) => setConfig({ ...config, acceptingApplications: e.target.checked })}
+            />
+            <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
+          </label>
+       </div>
+
       {/* General Info */}
       <div className="bg-white dark:bg-white/5 p-6 rounded-2xl shadow-sm border border-chalk dark:border-white/10">
         <h2 className="text-lg font-bold text-primary dark:text-white mb-4">General Information</h2>
