@@ -60,30 +60,34 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   // Public / Login Layout
   return (
-    <div className="min-h-screen flex flex-col items-center p-4 sm:p-8">
+    <div className="min-h-screen flex flex-col items-center p-4 sm:p-8 overflow-x-hidden">
       {/* Brand Header */}
-      <header className="w-full max-w-5xl flex justify-between items-center mb-12">
+      <header className="w-full max-w-5xl flex justify-between items-center mb-8 sm:mb-12">
         <Link to="/" className="flex items-center gap-3 group">
-          <div className="relative w-10 h-10">
+          <div className="relative w-8 h-8 sm:w-10 sm:h-10">
              <div className="absolute inset-0 bg-[#3B472F] rounded-full opacity-20 group-hover:scale-110 transition-transform"></div>
              <svg viewBox="0 0 100 100" className="w-full h-full text-[#3B472F] animate-spin-slow" style={{ animationDuration: '10s' }}>
                 <path d="M50 10 A 40 40 0 0 1 90 50" fill="none" stroke="currentColor" strokeWidth="12" strokeLinecap="round" strokeDasharray="10 20"/>
                 <path d="M50 90 A 40 40 0 0 1 10 50" fill="none" stroke="currentColor" strokeWidth="12" strokeLinecap="round" strokeDasharray="10 20"/>
              </svg>
           </div>
-          <span className="text-3xl font-bold tracking-tight text-[#3B472F]">TCP<sup className="text-xs ml-1">TM</sup></span>
+          <span className="text-2xl sm:text-3xl font-bold tracking-tight text-[#3B472F]">TCP<sup className="text-xs ml-1">TM</sup></span>
         </Link>
 
         <nav className="flex gap-4">
           {!location.pathname.startsWith('/admin') && (
-             <Link to="/access" className={`text-sm font-semibold px-4 py-2 rounded-full transition-colors ${location.pathname === '/access' ? 'bg-[#3B472F] text-white' : 'text-[#3B472F] hover:bg-[#3B472F]/10'}`}>
+             <Link to="/access" className={`text-xs sm:text-sm font-semibold px-4 py-2 rounded-full transition-colors ${location.pathname === '/access' ? 'bg-[#3B472F] text-white' : 'text-[#3B472F] hover:bg-[#3B472F]/10'}`}>
                  Access Class
              </Link>
           )}
         </nav>
       </header>
 
-      <main className="w-full max-w-5xl flex-1 flex flex-col items-center justify-center">
+      {/* 
+         Removed justify-center to allow natural top-to-bottom flow on mobile when content is tall,
+         preventing content from being cut off at the top if centered.
+      */}
+      <main className="w-full max-w-5xl flex-1 flex flex-col items-center">
         {children}
       </main>
 

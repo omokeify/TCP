@@ -59,7 +59,7 @@ export interface ClassConfig {
 export const DEFAULT_CLASS_INFO: ClassConfig = {
   title: "Advanced React Patterns Masterclass",
   description: "An exclusive, invite-only deep dive into modern component architecture. Limited seats available.",
-  acceptingApplications: false,
+  acceptingApplications: true,
   date: "October 15, 2024",
   time: "10:00 AM - 2:00 PM PST",
   location: "https://zoom.us/j/123456789",
