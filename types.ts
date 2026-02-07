@@ -57,7 +57,7 @@ export interface ClassConfig {
 }
 
 export const DEFAULT_CLASS_INFO: ClassConfig = {
-  title: "Advanced React Patterns Masterclass",
+  title: "Vibe Coding Class",
   description: "An exclusive, invite-only deep dive into modern component architecture. Limited seats available.",
   acceptingApplications: true,
   date: "October 15, 2024",
@@ -69,7 +69,7 @@ export const DEFAULT_CLASS_INFO: ClassConfig = {
   tasks: [
     {
       id: "t1",
-      description: "Follow @BlinkClass on Twitter",
+      description: "Follow @web3frik on X",
       requiresProof: true,
       proofLabel: "Your Twitter Handle",
       proofType: "username"
@@ -81,11 +81,22 @@ export const DEFAULT_CLASS_INFO: ClassConfig = {
       proofType: "text"
     },
     {
-      id: "t3",
-      description: "Upload a screenshot of your GitHub contribution graph",
+      id: "vgh4hv8x4",
+      description: "Follow @d3fi on X",
       requiresProof: true,
-      proofLabel: "GitHub Graph",
-      proofType: "image"
+      proofType: "text"
+    },
+    {
+      id: "2cjq2q4uw",
+      description: "Follow @n1fredy",
+      requiresProof: true,
+      proofType: "text"
+    },
+    {
+      id: "bwieba3zd",
+      description: "Repost https://x.com/web3Xs/status/2019809110649147899",
+      requiresProof: true,
+      proofType: "link"
     }
   ],
   resources: [
