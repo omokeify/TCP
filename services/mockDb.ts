@@ -140,7 +140,10 @@ export const MockService = {
   updateApplicationStatus: async (id: string, status: ApplicationStatus): Promise<void> => {
     const dbUrl = MockService.getDbUrl();
     if (dbUrl) {
-       await MockService.callScript('update_status', 'POST', { id, status });
+       const res = await MockService.callScript('update_status', 'POST', { id, status });
+       if (!res.success) {
+         throw new Error(res.message || "Failed to update status remotely");
+       }
        return;
     }
 
