@@ -19,7 +19,7 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 export const MockService = {
   // --- Database Configuration ---
   getDbUrl: (): string | null => {
-     return localStorage.getItem(DB_URL_KEY);
+     return localStorage.getItem(DB_URL_KEY) || import.meta.env.VITE_DB_URL || null;
   },
 
   setDbUrl: (url: string) => {
@@ -36,9 +36,13 @@ export const MockService = {
        const res = await fetch(`${url}?action=${action}`);
        return await res.json();
     } else {
+       // Google Apps Script requires text/plain to avoid preflight OPTIONS check issues
        const res = await fetch(url, {
          method: 'POST',
-         body: JSON.stringify({ action, data })
+         body: JSON.stringify({ action, data }),
+         headers: {
+            "Content-Type": "text/plain;charset=utf-8",
+         },
        });
        return await res.json();
     }
