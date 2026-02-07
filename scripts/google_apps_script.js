@@ -8,7 +8,7 @@
  * 4. Save the project (Ctrl+S)
  * 5. Click "Deploy" -> "New deployment"
  * 6. Select type: "Web app"
- * 7. Description: "Blink API"
+ * 7. Description: "Blink API v3 - Robust"
  * 8. Execute as: "Me"
  * 9. Who has access: "Anyone" (Important for the app to access it)
  * 10. Click "Deploy"
@@ -39,8 +39,23 @@ function handleRequest(e) {
   lock.tryLock(10000);
 
   try {
-    const action = e.parameter.action || (e.postData && JSON.parse(e.postData.contents).action);
-    const data = e.postData ? JSON.parse(e.postData.contents).data : null;
+    // Robust Parameter Parsing
+    let action = e.parameter.action;
+    let data = null;
+
+    if (!action && e.postData && e.postData.contents) {
+      try {
+        const json = JSON.parse(e.postData.contents);
+        action = json.action;
+        data = json.data;
+      } catch (jsonErr) {
+        // Fallback for text payloads
+      }
+    }
+
+    if (!action) {
+      return ContentService.createTextOutput(JSON.stringify({ error: "No action specified" })).setMimeType(ContentService.MimeType.JSON);
+    }
     
     let result = {};
 
@@ -85,7 +100,7 @@ function handleRequest(e) {
 
   } catch (err) {
     return ContentService
-      .createTextOutput(JSON.stringify({ error: err.toString() }))
+      .createTextOutput(JSON.stringify({ error: "Server Error: " + err.toString() }))
       .setMimeType(ContentService.MimeType.JSON);
   } finally {
     lock.releaseLock();
@@ -124,10 +139,14 @@ function setupSheets() {
 function getConfig() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName(SHEET_NAMES.CONFIG);
-  if (!sheet) return {}; // Return empty if not setup
+  if (!sheet) return {}; 
   
   const val = sheet.getRange('A1').getValue();
-  return val ? JSON.parse(val) : {};
+  try {
+    return val ? JSON.parse(val) : {};
+  } catch (e) {
+    return {};
+  }
 }
 
 function updateConfig(config) {
@@ -145,7 +164,6 @@ function submitApplication(app) {
   let sheet = ss.getSheetByName(SHEET_NAMES.APPLICATIONS);
   if (!sheet) { setupSheets(); sheet = ss.getSheetByName(SHEET_NAMES.APPLICATIONS); }
   
-  // 'id', 'email', 'status', 'submittedAt', 'data'
   sheet.appendRow([
     app.id,
     app.email,
@@ -167,16 +185,11 @@ function getApplications() {
   // Skip header
   for (let i = 1; i < data.length; i++) {
     try {
-      // Column 4 (index 4) is 'data' which contains full JSON
-      // But let's check structure: id(0), email(1), status(2), submittedAt(3), data(4)
       if (data[i][4]) {
         apps.push(JSON.parse(data[i][4]));
       }
-    } catch (e) {
-      // Ignore malformed rows
-    }
+    } catch (e) { }
   }
-  // Return newest first
   return apps.reverse();
 }
 
@@ -187,10 +200,8 @@ function updateStatus(id, status) {
   
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] == id) {
-      // Update Status column (index 2)
       sheet.getRange(i + 1, 3).setValue(status);
       
-      // Update JSON blob (index 4)
       const app = JSON.parse(data[i][4]);
       app.status = status;
       sheet.getRange(i + 1, 5).setValue(JSON.stringify(app));
@@ -211,14 +222,10 @@ function generateCode(data) {
   // Check existing
   const rows = sheet.getDataRange().getValues();
   for (let i = 1; i < rows.length; i++) {
-    if (rows[i][3] == applicationId) { // applicationId is index 3
-      // Resend email with existing code
+    if (rows[i][3] == applicationId) {
       const existingCode = rows[i][1];
       sendEmail(email, existingCode);
-      return { 
-        code: existingCode, 
-        message: "Resent existing code" 
-      };
+      return { code: existingCode, message: "Resent existing code" };
     }
   }
   
@@ -227,15 +234,12 @@ function generateCode(data) {
   const id = Math.random().toString(36).substr(2, 9);
   const generatedAt = new Date().toISOString();
   
-  // 'id', 'code', 'email', 'applicationId', 'used', 'generatedAt'
   sheet.appendRow([id, code, email, applicationId, false, generatedAt]);
   
   // Send Email
   sendEmail(email, code);
   
-  return { 
-    id, code, email, applicationId, used: false, generatedAt 
-  };
+  return { id, code, email, applicationId, used: false, generatedAt };
 }
 
 function getCodes() {
@@ -259,32 +263,127 @@ function getCodes() {
 }
 
 function useCode(codeStr) {
+  if (!codeStr) return { valid: false, message: "No code provided" };
+  const normalizedCode = codeStr.toString().trim();
+
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(SHEET_NAMES.CODES);
-  if (!sheet) return { valid: false };
+  
+  // 1. Try to find in CODES sheet
+  let sheet = ss.getSheetByName(SHEET_NAMES.CODES);
+  if (!sheet) { setupSheets(); sheet = ss.getSheetByName(SHEET_NAMES.CODES); }
   
   const data = sheet.getDataRange().getValues();
+  let codeRowIndex = -1;
+  let codeEntry = null;
+
   for (let i = 1; i < data.length; i++) {
-    if (data[i][1] === codeStr) {
-      // Mark as used
-      // sheet.getRange(i + 1, 5).setValue(true); // Don't mark used for multiple logins?
-      // Logic from local mock: "Mark as used (if not already)"
-      // But user wants multiple logins.
-      // Let's mark it used to track "at least one login" but allow re-use.
-      
-      if (data[i][4] !== true && data[i][4] !== 'true') {
-        sheet.getRange(i + 1, 5).setValue(true);
-      }
-      
-      return { valid: true };
+    if (data[i][1] && data[i][1].toString().trim() === normalizedCode) {
+      codeRowIndex = i + 1;
+      codeEntry = {
+        email: data[i][2],
+        applicationId: data[i][3],
+        used: data[i][4]
+      };
+      break;
     }
   }
-  return { valid: false };
+
+  // 2. Fallback: If not in Codes, check Applications (Auto-Recover)
+  // This helps if the Code sheet was deleted or desynced but App is Approved.
+  if (codeRowIndex === -1) {
+    // We don't have the code in the DB, so we can't verify it unless we know WHICH app it belongs to.
+    // We can't search Applications by Code unless we stored it there.
+    // Current 'data' column in App sheet stores the full object.
+    // If the 'generateCode' was called, it might not be in the App object unless we updated it.
+    // However, if the user is APPROVED, they SHOULD have a code.
+    // Let's return a specific error.
+    return { valid: false, message: "Code not found in system. Please contact admin." };
+  }
+
+  // 3. Verify Status in Application Sheet (Double Check)
+  // This ensures that if an app was rejected LATER, the code is invalidated.
+  const appSheet = ss.getSheetByName(SHEET_NAMES.APPLICATIONS);
+  if (appSheet) {
+    const apps = appSheet.getDataRange().getValues();
+    let isApproved = false;
+    let appFound = false;
+    
+    for (let i = 1; i < apps.length; i++) {
+      if (apps[i][0] == codeEntry.applicationId) { // Match ID
+        appFound = true;
+        if (apps[i][2] === 'approved') {
+          isApproved = true;
+        }
+        break;
+      }
+    }
+    
+    if (appFound && !isApproved) {
+       return { valid: false, message: "Your application is no longer approved." };
+    }
+  }
+
+  // 4. Session Expiration
+  const config = getConfig();
+  
+  // Default to FUTURE date if config is missing/broken to avoid "Expired" on fresh install
+  // If config.sessions is empty, we assume OPEN access or rely on frontend default.
+  // But let's check if there ARE sessions configured.
+  
+  if (config.sessions && config.sessions.length > 0) {
+    let lastSessionEnd = null;
+    config.sessions.forEach(session => {
+      const end = parseSessionEnd(session.date, session.time);
+      if (end && (!lastSessionEnd || end.getTime() > lastSessionEnd.getTime())) {
+        lastSessionEnd = end;
+      }
+    });
+
+    if (lastSessionEnd) {
+      const now = new Date();
+      // Add buffer for server time differences (e.g., 24 hours)
+      // Apps Script uses America/New_York or GMT usually.
+      if (now.getTime() > (lastSessionEnd.getTime() + 86400000)) { 
+        return { valid: false, message: "Class session has ended. Code expired." };
+      }
+    }
+  } else if (config.date && config.time) {
+     // Legacy check
+     const end = parseSessionEnd(config.date, config.time);
+     if (end) {
+        const now = new Date();
+        if (now.getTime() > (end.getTime() + 86400000)) {
+           return { valid: false, message: "Class session has ended. Code expired." };
+        }
+     }
+  }
+
+  // 5. Mark Used
+  if (codeEntry.used !== true && codeEntry.used !== 'true') {
+    sheet.getRange(codeRowIndex, 5).setValue(true);
+  }
+      
+  return { valid: true };
+}
+
+function parseSessionEnd(dateStr, timeStr) {
+  if (!dateStr || !timeStr) return null;
+  try {
+    const times = timeStr.match(/(\d{1,2}:\d{2}\s?(?:AM|PM)?)/gi);
+    if (!times || times.length < 1) return null;
+    
+    const endTimeStr = times[times.length - 1]; 
+    const combined = dateStr + ' ' + endTimeStr;
+    const date = new Date(combined);
+    
+    if (isNaN(date.getTime())) return null;
+    return date;
+  } catch (e) {
+    return null;
+  }
 }
 
 function triggerReminders() {
-  // Example logic: Send email to all unused codes?
-  // Or all used codes? Mock logic was "remind approved users".
   return { sent: 0, message: "Not implemented in this version" };
 }
 
@@ -293,7 +392,6 @@ function triggerReminders() {
 function sendEmail(recipient, code) {
   const subject = "Your Access Code for The Class Portal";
   
-  // Simple HTML Template
   const htmlBody = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
       <h2 style="color: #3B472F;">Welcome!</h2>
@@ -311,9 +409,13 @@ function sendEmail(recipient, code) {
     </div>
   `;
   
-  MailApp.sendEmail({
-    to: recipient,
-    subject: subject,
-    htmlBody: htmlBody
-  });
+  try {
+    MailApp.sendEmail({
+      to: recipient,
+      subject: subject,
+      htmlBody: htmlBody
+    });
+  } catch (e) {
+    console.log("Failed to send email: " + e.toString());
+  }
 }

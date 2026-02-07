@@ -77,7 +77,7 @@ export const DEFAULT_CLASS_INFO: ClassConfig = {
   title: "Vibe Coding Class",
   description: "An exclusive, invite-only deep dive into modern component architecture. Limited seats available.",
   acceptingApplications: true,
-  date: "October 15, 2024",
+  date: "October 15, 2030",
   time: "10:00 AM - 2:00 PM PST",
   location: "https://zoom.us/j/123456789",
   instructor: "Sarah Drasner (Guest)",
@@ -87,7 +87,7 @@ export const DEFAULT_CLASS_INFO: ClassConfig = {
      {
         id: "default-1",
         title: "Main Session",
-        date: "October 15, 2024",
+        date: "October 15, 2030",
         time: "10:00 AM - 2:00 PM PST",
         location: "https://zoom.us/j/123456789",
         instructor: "Sarah Drasner (Guest)"

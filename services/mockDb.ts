@@ -201,8 +201,17 @@ export const MockService = {
   validateAndUseCode: async (codeStr: string): Promise<{ valid: boolean; message?: string }> => {
     const dbUrl = MockService.getDbUrl();
     if (dbUrl) {
-       const res = await MockService.callScript('use_code', 'POST', { code: codeStr });
-       return { valid: res.valid, message: res.valid ? undefined : "Invalid or expired code (Remote)" };
+      try {
+        const res = await MockService.callScript('use_code', 'POST', { code: codeStr.trim() });
+        // The script returns { valid: boolean, message?: string }
+        if (!res.valid) {
+          // Pass the exact message from the backend to the UI
+          return { valid: false, message: res.message || "Invalid or expired code (Remote)" };
+        }
+        return { valid: true };
+      } catch (e) {
+        return { valid: false, message: "Connection error: " + (e as Error).message };
+      }
     }
 
     await delay(800);
