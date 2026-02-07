@@ -9,13 +9,13 @@ export const ClassPortal: React.FC = () => {
   const [userCode, setUserCode] = useState<string>('');
 
   useEffect(() => {
-    // const hasAccess = sessionStorage.getItem('blink_class_access');
+    const hasAccess = sessionStorage.getItem('blink_class_access');
     const code = sessionStorage.getItem('blink_user_code');
     
-    // if (!hasAccess) {
-    //   navigate('/access');
-    //   return;
-    // }
+    if (!hasAccess) {
+      navigate('/access');
+      return;
+    }
     
     if (code) setUserCode(code);
 

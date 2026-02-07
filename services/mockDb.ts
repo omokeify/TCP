@@ -48,6 +48,29 @@ export const MockService = {
     }
   },
 
+  // --- Helpers ---
+
+  parseSessionEnd: (dateStr?: string, timeStr?: string): Date | null => {
+    if (!dateStr || !timeStr) return null;
+    try {
+      // Extract end time (e.g. "2:00 PM" from "10:00 AM - 2:00 PM PST")
+      // Matches "10:00 AM" or "14:00"
+      const times = timeStr.match(/(\d{1,2}:\d{2}\s?(?:AM|PM)?)/gi);
+      if (!times || times.length < 1) return null;
+
+      // Use the last match as the end time
+      const endTimeStr = times[times.length - 1]; 
+      const endDateTimeStr = `${dateStr} ${endTimeStr}`;
+      
+      const date = new Date(endDateTimeStr);
+      if (isNaN(date.getTime())) return null;
+      
+      return date;
+    } catch (e) {
+      return null;
+    }
+  },
+
   // --- Config ---
 
   getClassConfig: async (): Promise<ClassConfig> => {
@@ -190,13 +213,48 @@ export const MockService = {
       return { valid: false, message: "Invalid invitation code. Please check your email and try again." };
     }
 
-    if (codeEntry.used) {
-      return { valid: false, message: "This code has already been redeemed. Each code can only be used once." };
+    // Check Expiration (Code expires only after the LAST session ends)
+    const config = await MockService.getClassConfig();
+    let lastSessionEnd: Date | null = null;
+
+    // Check legacy single session
+    if (config.date && config.time) {
+        lastSessionEnd = MockService.parseSessionEnd(config.date, config.time);
     }
 
-    // Mark as used
-    const updatedCodes = codes.map(c => c.code === codeStr ? { ...c, used: true } : c);
-    localStorage.setItem(CODES_KEY, JSON.stringify(updatedCodes));
+    // Check multiple sessions (if any, they might override or extend)
+    if (config.sessions && config.sessions.length > 0) {
+        config.sessions.forEach(session => {
+            const end = MockService.parseSessionEnd(session.date, session.time);
+            if (end && (!lastSessionEnd || end > lastSessionEnd)) {
+                lastSessionEnd = end;
+            }
+        });
+    }
+
+    // If we have a valid end time, check if we are past it
+    if (lastSessionEnd) {
+        const now = new Date();
+        // Add a small buffer (e.g. 1 hour) to allow for late access or timezone drift?
+        // User said "till the session they are going for ends".
+        // Let's strictly enforce end time but maybe strictness depends on preference.
+        // I'll stick to strict end time.
+        if (now > lastSessionEnd) {
+             return { valid: false, message: "This class session has ended. Access code expired." };
+        }
+    }
+
+    // Allow code reuse so users can log in multiple times
+    // if (codeEntry.used) {
+    //   return { valid: false, message: "This code has already been redeemed. Each code can only be used once." };
+    // }
+
+    // Mark as used (if not already)
+    if (!codeEntry.used) {
+        const updatedCodes = codes.map(c => c.code === codeStr ? { ...c, used: true } : c);
+        localStorage.setItem(CODES_KEY, JSON.stringify(updatedCodes));
+    }
+
     return { valid: true };
   },
 

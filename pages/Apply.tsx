@@ -139,7 +139,9 @@ export const Apply: React.FC = () => {
             <h2 className="text-2xl font-bold text-[#3B472F] mb-6">Apply for Access</h2>
             <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-                <label className="block text-sm font-bold text-[#3B472F] mb-1">Full Name</label>
+                <label className="block text-sm font-bold text-[#3B472F] mb-1">
+                    {classInfo.nameLabel || "Full Name"}
+                </label>
                 <input 
                 required
                 name="fullName"
@@ -152,7 +154,9 @@ export const Apply: React.FC = () => {
             </div>
 
             <div>
-                <label className="block text-sm font-bold text-[#3B472F] mb-1">Email Address</label>
+                <label className="block text-sm font-bold text-[#3B472F] mb-1">
+                    {classInfo.emailLabel || "Email Address"}
+                </label>
                 <input 
                 required
                 name="email"
@@ -165,7 +169,9 @@ export const Apply: React.FC = () => {
             </div>
 
             <div>
-                <label className="block text-sm font-bold text-[#3B472F] mb-1">Why do you want to join?</label>
+                <label className="block text-sm font-bold text-[#3B472F] mb-1">
+                    {classInfo.whyJoinLabel || "Why do you want to join?"}
+                </label>
                 <textarea 
                 required
                 name="whyJoin"
@@ -186,9 +192,22 @@ export const Apply: React.FC = () => {
 
                 return (
                 <div key={task.id}>
-                    <label className="block text-sm font-bold text-[#3B472F] mb-1">
-                    {task.proofLabel || task.description}
-                    </label>
+                    <div className="mb-1">
+                        <label className="block text-sm font-bold text-[#3B472F]">
+                            {task.proofLabel || task.description}
+                        </label>
+                        {task.link && (
+                            <a 
+                                href={task.link} 
+                                target="_blank" 
+                                rel="noreferrer" 
+                                className="text-xs text-[#3B472F] opacity-80 hover:opacity-100 hover:underline flex items-center gap-1 mt-0.5 w-fit"
+                            >
+                                <span className="material-icons-outlined text-[14px]">link</span>
+                                Open Link for Task
+                            </a>
+                        )}
+                    </div>
                     
                     {task.proofType === 'image' ? (
                         <div className="space-y-2">

@@ -66,6 +66,11 @@ export interface ClassConfig {
   instructor?: string;
   extraNotes?: string;
   lastUpdated?: string;
+  
+  // Custom Labels for Standard Fields
+  nameLabel?: string;
+  emailLabel?: string;
+  whyJoinLabel?: string;
 }
 
 export const DEFAULT_CLASS_INFO: ClassConfig = {

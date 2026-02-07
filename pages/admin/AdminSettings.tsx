@@ -43,11 +43,36 @@ export const AdminSettings: React.FC = () => {
     }
   };
 
+  const [draggedTaskIndex, setDraggedTaskIndex] = useState<number | null>(null);
+
   // --- Task Management ---
   const handleTaskChange = (index: number, field: keyof TaskConfig, value: any) => {
     const newTasks = [...config.tasks];
     newTasks[index] = { ...newTasks[index], [field]: value };
     setConfig({ ...config, tasks: newTasks });
+  };
+
+  const handleDragStart = (index: number) => {
+    setDraggedTaskIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault(); // Necessary to allow dropping
+  };
+
+  const handleDrop = (targetIndex: number) => {
+    if (draggedTaskIndex === null || draggedTaskIndex === targetIndex) return;
+    
+    const newTasks = [...config.tasks];
+    const draggedTask = newTasks[draggedTaskIndex];
+    
+    // Remove from old position
+    newTasks.splice(draggedTaskIndex, 1);
+    // Insert at new position
+    newTasks.splice(targetIndex, 0, draggedTask);
+    
+    setConfig({ ...config, tasks: newTasks });
+    setDraggedTaskIndex(null);
   };
 
   const addTask = () => {
@@ -270,6 +295,43 @@ export const AdminSettings: React.FC = () => {
         </div>
       </div>
 
+      {/* Standard Fields Config */}
+      <div className="bg-white dark:bg-white/5 p-6 rounded-2xl shadow-sm border border-chalk dark:border-white/10">
+        <h2 className="text-lg font-bold text-primary dark:text-white mb-4">Standard Application Fields</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs uppercase font-bold text-ash/60 dark:text-chalk/40 mb-1">Name Field Label</label>
+            <input 
+              type="text" 
+              className="w-full px-3 py-2 bg-white dark:bg-white/5 border border-chalk dark:border-white/10 rounded-lg text-sm focus:ring-1 focus:ring-primary dark:focus:ring-accent text-primary dark:text-chalk"
+              value={config.nameLabel || ''}
+              onChange={(e) => setConfig({ ...config, nameLabel: e.target.value })}
+              placeholder="Full Name"
+            />
+          </div>
+          <div>
+            <label className="block text-xs uppercase font-bold text-ash/60 dark:text-chalk/40 mb-1">Email Field Label</label>
+            <input 
+              type="text" 
+              className="w-full px-3 py-2 bg-white dark:bg-white/5 border border-chalk dark:border-white/10 rounded-lg text-sm focus:ring-1 focus:ring-primary dark:focus:ring-accent text-primary dark:text-chalk"
+              value={config.emailLabel || ''}
+              onChange={(e) => setConfig({ ...config, emailLabel: e.target.value })}
+              placeholder="Email Address"
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-xs uppercase font-bold text-ash/60 dark:text-chalk/40 mb-1">Reason to Join Label</label>
+            <input 
+              type="text" 
+              className="w-full px-3 py-2 bg-white dark:bg-white/5 border border-chalk dark:border-white/10 rounded-lg text-sm focus:ring-1 focus:ring-primary dark:focus:ring-accent text-primary dark:text-chalk"
+              value={config.whyJoinLabel || ''}
+              onChange={(e) => setConfig({ ...config, whyJoinLabel: e.target.value })}
+              placeholder="Why do you want to join?"
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Tasks Config */}
       <div className="bg-white dark:bg-white/5 p-6 rounded-2xl shadow-sm border border-chalk dark:border-white/10">
         <div className="flex justify-between items-center mb-6">
@@ -284,9 +346,20 @@ export const AdminSettings: React.FC = () => {
 
         <div className="space-y-4">
           {config.tasks.map((task, index) => (
-            <div key={task.id || index} className="p-4 rounded-xl border border-chalk dark:border-white/10 bg-chalk/10 dark:bg-white/5">
+            <div 
+                key={task.id || index} 
+                className={`p-4 rounded-xl border transition-all ${
+                    draggedTaskIndex === index 
+                        ? 'border-primary border-dashed bg-primary/5 opacity-50' 
+                        : 'border-chalk dark:border-white/10 bg-chalk/10 dark:bg-white/5'
+                }`}
+                draggable
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDrop={() => handleDrop(index)}
+            >
               <div className="flex items-start gap-4">
-                <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm shrink-0">
+                <div className="cursor-grab active:cursor-grabbing w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm shrink-0 hover:bg-primary/80 transition-colors" title="Drag to reorder">
                    {index + 1}
                 </div>
                 
@@ -330,13 +403,15 @@ export const AdminSettings: React.FC = () => {
                       {task.requiresProof && (
                           <>
                              <div className="flex-1">
-                                <label className="block text-xs uppercase font-bold text-ash/60 dark:text-chalk/40 mb-1">Input Label</label>
+                                <label className="block text-xs uppercase font-bold text-ash/60 dark:text-chalk/40 mb-1">
+                                    {task.proofType === 'yes_no' ? 'Question Text' : 'Input Label / Question'}
+                                </label>
                                 <input 
                                     type="text" 
                                     className="w-full px-3 py-2 bg-white dark:bg-white/5 border border-chalk dark:border-white/10 rounded-lg text-sm focus:ring-1 focus:ring-primary dark:focus:ring-accent text-primary dark:text-chalk"
                                     value={task.proofLabel || ''}
                                     onChange={(e) => handleTaskChange(index, 'proofLabel', e.target.value)}
-                                    placeholder="e.g. Your Twitter Handle"
+                                    placeholder={task.proofType === 'yes_no' ? 'e.g. Did you join the Discord?' : 'e.g. Your Twitter Handle'}
                                 />
                              </div>
                              <div className="w-32">
