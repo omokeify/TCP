@@ -9,13 +9,13 @@ export const ClassPortal: React.FC = () => {
   const [userCode, setUserCode] = useState<string>('');
 
   useEffect(() => {
-    const hasAccess = sessionStorage.getItem('blink_class_access');
+    // const hasAccess = sessionStorage.getItem('blink_class_access');
     const code = sessionStorage.getItem('blink_user_code');
     
-    if (!hasAccess) {
-      navigate('/access');
-      return;
-    }
+    // if (!hasAccess) {
+    //   navigate('/access');
+    //   return;
+    // }
     
     if (code) setUserCode(code);
 
@@ -26,12 +26,6 @@ export const ClassPortal: React.FC = () => {
     };
     loadConfig();
   }, [navigate]);
-
-  const handleSignOut = () => {
-    sessionStorage.removeItem('blink_class_access');
-    sessionStorage.removeItem('blink_user_code');
-    navigate('/access');
-  };
 
   const generateReferralLink = () => {
     if (!userCode) return '';
@@ -50,13 +44,13 @@ export const ClassPortal: React.FC = () => {
 
   // --- Calendar Logic ---
   
-  const parseDates = () => {
-    if (!classConfig?.date || !classConfig?.time) return null;
+  const parseDates = (session?: { date?: string; time?: string }) => {
+    if (!session?.date || !session?.time) return null;
     
     // Attempt basic parsing for "October 15, 2024" and "10:00 AM - 2:00 PM PST"
     try {
-        const dateStr = classConfig.date; // e.g. "October 15, 2024"
-        const timeStr = classConfig.time; // e.g. "10:00 AM - 2:00 PM PST"
+        const dateStr = session.date; // e.g. "October 15, 2024"
+        const timeStr = session.time; // e.g. "10:00 AM - 2:00 PM PST"
         
         // Extract start/end time
         // Matches "10:00 AM" or "14:00"
@@ -79,9 +73,9 @@ export const ClassPortal: React.FC = () => {
     }
   };
 
-  const handleDownloadIcs = () => {
-     const dates = parseDates();
-     if (!dates || !classConfig) {
+  const handleDownloadIcs = (session: { title: string, description?: string, instructor?: string, location?: string, date: string, time: string }) => {
+     const dates = parseDates(session);
+     if (!dates) {
          alert("Could not generate calendar file. Date format may be invalid.");
          return;
      }
@@ -97,9 +91,9 @@ export const ClassPortal: React.FC = () => {
         `DTSTAMP:${formatDate(new Date())}`,
         `DTSTART:${formatDate(dates.start)}`,
         `DTEND:${formatDate(dates.end)}`,
-        `SUMMARY:${classConfig.title}`,
-        `DESCRIPTION:${classConfig.description.replace(/\n/g, "\\n")}\\n\\nInstructor: ${classConfig.instructor}`,
-        `LOCATION:${classConfig.location}`,
+        `SUMMARY:${session.title}`,
+        `DESCRIPTION:${(session.description || classConfig?.description || "").replace(/\n/g, "\\n")}\\n\\nInstructor: ${session.instructor}`,
+        `LOCATION:${session.location}`,
         "END:VEVENT",
         "END:VCALENDAR"
      ].join("\r\n");
@@ -113,9 +107,9 @@ export const ClassPortal: React.FC = () => {
      document.body.removeChild(link);
   };
 
-  const handleGoogleCalendar = () => {
-     const dates = parseDates();
-     if (!dates || !classConfig) {
+  const handleGoogleCalendar = (session: { title: string, description?: string, instructor?: string, location?: string, date: string, time: string }) => {
+     const dates = parseDates(session);
+     if (!dates) {
         alert("Could not open Google Calendar. Date format may be invalid.");
         return;
      }
@@ -124,10 +118,10 @@ export const ClassPortal: React.FC = () => {
      
      const url = new URL("https://calendar.google.com/calendar/render");
      url.searchParams.append("action", "TEMPLATE");
-     url.searchParams.append("text", classConfig.title);
+     url.searchParams.append("text", session.title);
      url.searchParams.append("dates", `${formatDate(dates.start)}/${formatDate(dates.end)}`);
-     url.searchParams.append("details", `${classConfig.description}\n\nInstructor: ${classConfig.instructor}`);
-     url.searchParams.append("location", classConfig.location || "");
+     url.searchParams.append("details", `${session.description || classConfig?.description || ""}\n\nInstructor: ${session.instructor}`);
+     url.searchParams.append("location", session.location || "");
 
      window.open(url.toString(), '_blank');
   };
@@ -144,11 +138,30 @@ export const ClassPortal: React.FC = () => {
   }
 
   const isLink = (str?: string) => str?.startsWith('http') || str?.startsWith('www');
-  const hasCalendarData = !!parseDates();
+  
+  // Use sessions if available, otherwise fallback to legacy single session
+  const sessions = classConfig.sessions && classConfig.sessions.length > 0 ? classConfig.sessions : [
+      {
+          id: 'default',
+          title: classConfig.title, // Use main title for default session
+          description: classConfig.description,
+          date: classConfig.date || 'TBA',
+          time: classConfig.time || 'TBA',
+          location: classConfig.location || 'Online',
+          instructor: classConfig.instructor || 'TBA'
+      }
+  ];
 
   return (
-    <div className="min-h-screen w-full font-sans text-primary relative">
+    <div className="min-h-screen w-full font-sans text-primary relative overflow-x-hidden">
       <style>{`
+        :root {
+            --primary: #3B472F;
+            --accent: #FFFA7E;
+            --eucalyptus: #CEE2C0;
+            --chalk: #EDEDE1;
+            --ash: #686868;
+        }
         .liquid-glass {
             background: rgba(255, 255, 255, 0.45);
             backdrop-filter: blur(24px) saturate(180%);
@@ -161,199 +174,180 @@ export const ClassPortal: React.FC = () => {
             border: 1px solid rgba(255, 255, 255, 0.5);
             border-radius: 1.5rem;
         }
+        .liquid-bg {
+            background: radial-gradient(circle at 0% 0%, #FFFA7E 0%, transparent 40%),
+                        radial-gradient(circle at 100% 100%, #CEE2C0 0%, transparent 40%),
+                        radial-gradient(circle at 50% 50%, #EDEDE1 0%, #FFFFFF 100%);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        .nohemi-tracking {
+            letter-spacing: -0.02em;
+        }
       `}</style>
 
-      {/* Navbar */}
-      <nav className="fixed top-0 w-full z-50 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-            <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                    <svg className="w-6 h-6 text-accent" fill="currentColor" viewBox="0 0 100 100">
-                        <path d="M50 15c-19.3 0-35 15.7-35 35s15.7 35 35 35 35-15.7 35-35-15.7-35-35-35zm0 60c-13.8 0-25-11.2-25-25s11.2-25 25-25 25 11.2 25 25-11.2 25-25 25z"></path>
-                    </svg>
-                </div>
-                <span className="text-xl font-bold tracking-tighter text-primary">TCP<sup className="text-xs ml-0.5 font-normal opacity-60">TM</sup></span>
-            </div>
-            <div className="flex items-center gap-4">
-                <span className="hidden sm:block text-sm font-medium text-primary opacity-60">Portal Access</span>
-                <div className="hidden sm:block w-px h-4 bg-primary opacity-20"></div>
-                <button 
-                    onClick={handleSignOut}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-full text-xs font-bold hover:opacity-90 transition-all"
-                >
-                    Sign Out
-                </button>
-            </div>
-        </div>
-      </nav>
+      <div className="liquid-bg"></div>
 
-      <main className="max-w-6xl mx-auto px-6 pt-32 pb-20">
+      <main className="max-w-6xl mx-auto px-6 pt-12 pb-20">
         <header className="mb-12 text-center md:text-left">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-accent text-primary rounded-full text-xs font-bold mb-4">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[var(--accent)] text-[var(--primary)] rounded-full text-xs font-bold mb-4">
                 <span className="material-icons-outlined text-[16px] leading-none">verified</span>
                 Invite Code Redeemed
             </div>
-            <h1 className="text-4xl md:text-6xl font-extrabold text-primary tracking-tight mb-4">
+            <h1 className="text-4xl md:text-6xl font-extrabold text-[var(--primary)] nohemi-tracking mb-4">
                 Welcome to the Class 🎉
             </h1>
-            <p className="text-lg text-primary opacity-70 max-w-2xl font-medium">
+            <p className="text-lg text-[var(--primary)] opacity-70 max-w-2xl font-medium">
                 You're all set! Below you'll find the curated details for your upcoming session. 
                 Keep this link bookmarked as your primary portal.
             </p>
         </header>
 
         <div className="liquid-glass rounded-[2.5rem] p-8 md:p-12 overflow-hidden relative">
-            <div className="absolute -top-20 -right-20 w-64 h-64 bg-accent rounded-full blur-[80px] opacity-40 pointer-events-none"></div>
+            <div className="absolute -top-20 -right-20 w-64 h-64 bg-[var(--accent)] rounded-full blur-[80px] opacity-40 pointer-events-none"></div>
             
             <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12">
-                {/* Left Column: Class Details */}
-                <div className="lg:col-span-7">
-                    <div className="mb-10">
-                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-ash mb-2 block">Current Session</span>
-                        <h2 className="text-3xl md:text-5xl font-extrabold text-primary tracking-tight mb-6 leading-tight">
-                            {classConfig.title}
-                        </h2>
-                        <div className="prose prose-sm text-ash leading-relaxed font-medium whitespace-pre-wrap">
-                            <p>{classConfig.description}</p>
-                        </div>
-                    </div>
+                {/* Left Column: Sessions List */}
+                <div className="lg:col-span-7 space-y-12">
+                    {sessions.map((session, index) => {
+                        const hasCalendar = !!parseDates(session);
+                        return (
+                            <div key={session.id || index} className="relative">
+                                {index > 0 && <div className="w-full h-px bg-[var(--primary)]/10 mb-12"></div>}
+                                <div className="mb-10">
+                                    <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--ash)] mb-2 block">
+                                        {sessions.length > 1 ? `Session ${index + 1}` : 'Current Session'}
+                                    </span>
+                                    <h2 className="text-3xl md:text-4xl font-extrabold text-[var(--primary)] nohemi-tracking mb-6 leading-tight">
+                                        {session.title}
+                                    </h2>
+                                    <div className="prose prose-sm text-[var(--ash)] leading-relaxed font-medium whitespace-pre-wrap">
+                                        <p>{session.description || classConfig.description}</p>
+                                    </div>
+                                </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
-                        <div className="glass-card p-6 flex flex-col gap-3">
-                            <div className="w-10 h-10 bg-eucalyptus rounded-xl flex items-center justify-center text-primary">
-                                <span className="material-icons-outlined">calendar_today</span>
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-ash">Date</p>
-                                <p className="text-lg font-bold text-primary">{classConfig.date || 'TBA'}</p>
-                            </div>
-                        </div>
-                        <div className="glass-card p-6 flex flex-col gap-3">
-                            <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center text-primary">
-                                <span className="material-icons-outlined">schedule</span>
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-ash">Time</p>
-                                <p className="text-lg font-bold text-primary">{classConfig.time || 'TBA'}</p>
-                            </div>
-                        </div>
-                    </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
+                                    <div className="glass-card p-6 flex flex-col gap-3">
+                                        <div className="w-10 h-10 bg-[var(--eucalyptus)] rounded-xl flex items-center justify-center text-[var(--primary)]">
+                                            <span className="material-icons-outlined">calendar_today</span>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--ash)]">Date</p>
+                                            <p className="text-lg font-bold text-[var(--primary)]">{session.date}</p>
+                                        </div>
+                                    </div>
+                                    <div className="glass-card p-6 flex flex-col gap-3">
+                                        <div className="w-10 h-10 bg-[var(--accent)] rounded-xl flex items-center justify-center text-[var(--primary)]">
+                                            <span className="material-icons-outlined">schedule</span>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--ash)]">Time</p>
+                                            <p className="text-lg font-bold text-[var(--primary)]">{session.time}</p>
+                                        </div>
+                                    </div>
+                                </div>
 
-                    {/* Calendar Buttons */}
-                    {hasCalendarData && (
-                        <div className="flex flex-wrap gap-4 mb-10">
-                             <button 
-                                onClick={handleDownloadIcs}
-                                className="flex items-center gap-2 px-5 py-3 bg-white/60 hover:bg-white border border-white rounded-xl text-primary font-bold transition-all shadow-sm"
-                             >
-                                <span className="material-icons-outlined text-lg">download</span>
-                                Download Calendar (.ics)
-                             </button>
-                             <button 
-                                onClick={handleGoogleCalendar}
-                                className="flex items-center gap-2 px-5 py-3 bg-white/60 hover:bg-white border border-white rounded-xl text-primary font-bold transition-all shadow-sm"
-                             >
-                                <span className="material-icons-outlined text-lg">event</span>
-                                Add to Google Calendar
-                             </button>
-                        </div>
-                    )}
-
-                    <div className="bg-primary text-white rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl shadow-primary/20">
-                        <div className="flex items-center gap-4 w-full md:w-auto">
-                            <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center shrink-0">
-                                <span className="material-icons-outlined text-white">videocam</span>
+                                <div className="bg-[var(--primary)] text-white rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl shadow-[var(--primary)]/20">
+                                    <div className="flex items-center gap-4 w-full md:w-auto">
+                                        <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center shrink-0">
+                                            <span className="material-icons-outlined text-white">videocam</span>
+                                        </div>
+                                        <div className="overflow-hidden">
+                                            <p className="text-xs font-medium text-white/60">Meeting Location</p>
+                                            <p className="text-xl font-bold text-white truncate">
+                                                {isLink(session.location) ? 'Live via Zoom/Meet' : (session.location || 'Online')}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                                        {isLink(session.location) && (
+                                            <a 
+                                                href={session.location} 
+                                                target="_blank" 
+                                                rel="noreferrer"
+                                                className="px-8 py-4 bg-[var(--accent)] text-[var(--primary)] rounded-2xl font-bold text-center hover:scale-105 transition-transform active:scale-95 whitespace-nowrap"
+                                            >
+                                                Join Meeting
+                                            </a>
+                                        )}
+                                        {hasCalendar && (
+                                            <div className="flex gap-2 justify-center">
+                                                <button 
+                                                    onClick={() => handleDownloadIcs(session)}
+                                                    className="p-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl transition-colors"
+                                                    title="Download .ics"
+                                                >
+                                                    <span className="material-icons-outlined">download</span>
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleGoogleCalendar(session)}
+                                                    className="p-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl transition-colors"
+                                                    title="Add to Google Calendar"
+                                                >
+                                                    <span className="material-icons-outlined">event</span>
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
-                            <div className="overflow-hidden">
-                                <p className="text-xs font-medium text-white/60">Meeting Location</p>
-                                <p className="text-xl font-bold text-white truncate">
-                                    {isLink(classConfig.location) ? 'Live via Zoom/Meet' : (classConfig.location || 'Online')}
-                                </p>
-                            </div>
-                        </div>
-                        {isLink(classConfig.location) && (
-                            <a 
-                                href={classConfig.location} 
-                                target="_blank" 
-                                rel="noreferrer"
-                                className="w-full md:w-auto px-8 py-4 bg-accent text-primary rounded-2xl font-bold text-center hover:scale-105 transition-transform active:scale-95 whitespace-nowrap"
-                            >
-                                Join Meeting Now
-                            </a>
-                        )}
-                    </div>
+                        );
+                    })}
                 </div>
 
                 {/* Right Column: Instructor & Notes */}
                 <div className="lg:col-span-5 flex flex-col gap-6">
                     {/* Instructor Card */}
                     <div className="glass-card p-8">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-ash mb-6">Instructor</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--ash)] mb-6">Instructor</p>
                         <div className="flex items-center gap-4 mb-4">
-                            <div className="w-16 h-16 rounded-2xl overflow-hidden bg-eucalyptus border-4 border-white shrink-0 flex items-center justify-center">
-                                <span className="material-icons-outlined text-3xl text-primary">person</span>
+                            <div className="w-16 h-16 rounded-2xl overflow-hidden bg-[var(--eucalyptus)] border-4 border-white shrink-0 flex items-center justify-center">
+                                <span className="material-icons-outlined text-3xl text-[var(--primary)]">person</span>
                             </div>
                             <div>
-                                <h3 className="text-xl font-bold text-primary">{classConfig.instructor || 'TBA'}</h3>
-                                <p className="text-sm font-medium text-ash">Class Host</p>
+                                <h3 className="text-xl font-bold text-[var(--primary)]">{classConfig.instructor || 'TBA'}</h3>
+                                <p className="text-sm font-medium text-[var(--ash)]">Class Host</p>
                             </div>
                         </div>
-                        <p className="text-xs text-ash leading-relaxed italic border-l-2 border-accent pl-3">
-                            "Great design is eliminating all unnecessary details." — Join us for an immersive session.
+                        <p className="text-xs text-[var(--ash)] leading-relaxed italic">
+                            "Design is not just what it looks like. Design is how it works." — Join us for an immersive session.
                         </p>
-                    </div>
-
-                    {/* Referral Card (New) */}
-                    <div className="glass-card p-8 bg-gradient-to-br from-white/70 to-accent/20">
-                        <div className="flex items-center gap-2 mb-4">
-                             <span className="material-icons-outlined text-primary">campaign</span>
-                             <p className="text-[10px] font-bold uppercase tracking-wider text-ash">Invite a Friend</p>
-                        </div>
-                        <p className="text-sm font-medium text-primary mb-4">
-                            Want to invite a friend? Share your referral link below.
-                        </p>
-                        <div className="flex items-center gap-2 bg-white/50 p-2 rounded-xl border border-white/40">
-                             <code className="text-xs text-ash flex-1 truncate px-2 font-mono">
-                                 {generateReferralLink()}
-                             </code>
-                             <button 
-                                onClick={copyReferralLink}
-                                className="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-                             >
-                                <span className="material-icons-outlined text-sm">content_copy</span>
-                             </button>
-                        </div>
                     </div>
 
                     {/* Extra Notes */}
                     <div className="glass-card p-8 flex-1">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-ash mb-6">Extra Notes</p>
-                        <div className="space-y-4">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--ash)] mb-6">Extra Notes</p>
+                        <ul className="space-y-4">
                             {classConfig.extraNotes ? (
-                                <div className="flex gap-3 text-sm font-medium text-primary">
-                                    <span className="material-icons-outlined text-sm text-primary mt-0.5 shrink-0">info</span>
+                                <li className="flex gap-3 text-sm font-medium text-[var(--primary)]">
+                                    <span className="material-icons-outlined text-sm text-[var(--primary)] mt-0.5 shrink-0">info</span>
                                     <span className="whitespace-pre-wrap">{classConfig.extraNotes}</span>
-                                </div>
+                                </li>
                             ) : (
-                                <p className="text-sm text-ash italic">No additional notes.</p>
+                                <li className="text-sm text-[var(--ash)] italic">No additional notes.</li>
                             )}
                             
-                            <div className="flex gap-3 text-sm font-medium text-primary opacity-60">
-                                <span className="material-icons-outlined text-sm mt-0.5 shrink-0">check_circle</span>
-                                <span>Q&A session will follow the main lecture.</span>
-                            </div>
-                        </div>
+                            <li className="flex gap-3 text-sm font-medium text-[var(--primary)]">
+                                <span className="material-icons-outlined text-sm text-[var(--primary)] mt-0.5">info</span>
+                                Q&A session will follow the main lecture.
+                            </li>
+                        </ul>
                     </div>
 
                     {/* Status Footer */}
-                    <div className="flex flex-wrap items-center justify-between px-4 gap-2">
-                        <div className="flex items-center gap-2 text-[10px] font-bold text-ash opacity-60 uppercase tracking-widest">
+                    <div className="flex items-center justify-between px-4">
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-[var(--ash)] opacity-60 uppercase tracking-widest">
                             <span className="material-icons-outlined text-[14px]">sync</span>
                             Last updated {classConfig.lastUpdated || 'recently'}
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                            <span className="text-[10px] font-bold text-ash opacity-60 uppercase tracking-widest">Live Sync Active</span>
+                            <span className="text-[10px] font-bold text-[var(--ash)] opacity-60 uppercase tracking-widest">Live Sync Active</span>
                         </div>
                     </div>
                 </div>
@@ -361,12 +355,12 @@ export const ClassPortal: React.FC = () => {
         </div>
 
         <footer className="mt-12 flex flex-col md:flex-row items-center justify-between gap-6 opacity-60 px-4">
-            <p className="text-xs font-medium text-primary">
-                © {new Date().getFullYear()} TCP Studio. All class materials are protected.
+            <p className="text-xs font-medium text-[var(--primary)]">
+                © {new Date().getFullYear()} Blink Design Studio. All class materials are protected.
             </p>
             <div className="flex gap-8">
-                <button className="text-xs font-bold text-primary hover:underline">Support Center</button>
-                <button className="text-xs font-bold text-primary hover:underline">Privacy Policy</button>
+                <button className="text-xs font-bold text-[var(--primary)] hover:underline">Support Center</button>
+                <button className="text-xs font-bold text-[var(--primary)] hover:underline">Privacy Policy</button>
             </div>
         </footer>
       </main>

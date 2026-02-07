@@ -113,10 +113,17 @@ export const Apply: React.FC = () => {
               <li key={i} className="flex items-start gap-3 text-[#3B472F]">
                 <span className="bg-[#3B472F] text-[#FFFA7E] w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold mt-1 shrink-0">{i + 1}</span>
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium">{task.description}</span>
+                  {task.link ? (
+                    <a href={task.link} target="_blank" rel="noreferrer" className="text-sm font-medium hover:underline flex items-center gap-1 group">
+                      {task.description}
+                      <span className="material-icons-outlined text-xs opacity-50 group-hover:opacity-100 transition-opacity">open_in_new</span>
+                    </a>
+                  ) : (
+                    <span className="text-sm font-medium">{task.description}</span>
+                  )}
                   {task.requiresProof && (
                     <span className="text-xs text-[#686868]/80 mt-1">
-                      (Proof required: {task.proofType === 'image' ? 'Image Upload' : task.proofType})
+                      (Proof required: {task.proofType === 'image' ? 'Image Upload' : task.proofType === 'yes_no' ? 'Yes/No Selection' : task.proofType})
                     </span>
                   )}
                 </div>
@@ -204,6 +211,31 @@ export const Apply: React.FC = () => {
                             </button>
                             </div>
                         )}
+                        </div>
+                    ) : task.proofType === 'yes_no' ? (
+                        <div className="flex gap-4">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input 
+                                    type="radio"
+                                    name={`proof-${task.id}`}
+                                    value="yes"
+                                    checked={proof === 'yes'}
+                                    onChange={(e) => handleProofChange(task.id, e.target.value)}
+                                    className="w-4 h-4 text-[#3B472F] focus:ring-[#3B472F] border-gray-300"
+                                />
+                                <span className="text-sm font-medium text-[#3B472F]">Yes</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input 
+                                    type="radio"
+                                    name={`proof-${task.id}`}
+                                    value="no"
+                                    checked={proof === 'no'}
+                                    onChange={(e) => handleProofChange(task.id, e.target.value)}
+                                    className="w-4 h-4 text-[#3B472F] focus:ring-[#3B472F] border-gray-300"
+                                />
+                                <span className="text-sm font-medium text-[#3B472F]">No</span>
+                            </label>
                         </div>
                     ) : (
                         <input 

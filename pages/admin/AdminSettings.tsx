@@ -160,6 +160,116 @@ export const AdminSettings: React.FC = () => {
         </div>
       </div>
 
+      {/* Sessions Config */}
+      <div className="bg-white dark:bg-white/5 p-6 rounded-2xl shadow-sm border border-chalk dark:border-white/10">
+        <div className="flex justify-between items-center mb-6">
+            <h2 className="text-lg font-bold text-primary dark:text-white">Sessions</h2>
+            <button 
+                onClick={() => {
+                    const newSession = {
+                        id: Math.random().toString(36).substr(2, 9),
+                        title: "New Session",
+                        date: "October 15, 2024",
+                        time: "10:00 AM - 2:00 PM PST",
+                        location: "https://zoom.us/j/123456789",
+                        instructor: "Sarah Drasner (Guest)"
+                    };
+                    setConfig({ ...config, sessions: [...(config.sessions || []), newSession] });
+                }}
+                className="px-3 py-1.5 bg-accent/20 text-primary dark:text-accent rounded-lg text-sm font-bold hover:bg-accent hover:text-primary transition-colors flex items-center gap-1"
+            >
+                <span className="material-icons-outlined text-sm">add</span> Add Session
+            </button>
+        </div>
+
+        <div className="space-y-4">
+          {(config.sessions || []).map((session, index) => (
+            <div key={session.id || index} className="p-4 rounded-xl border border-chalk dark:border-white/10 bg-chalk/10 dark:bg-white/5">
+              <div className="flex justify-between items-start mb-4">
+                  <h3 className="font-bold text-primary dark:text-white">Session {index + 1}</h3>
+                  <button 
+                    onClick={() => {
+                        const newSessions = config.sessions ? [...config.sessions] : [];
+                        newSessions.splice(index, 1);
+                        setConfig({ ...config, sessions: newSessions });
+                    }}
+                    className="p-1 text-ash/40 hover:text-red-500 dark:text-chalk/20 dark:hover:text-red-400 transition-colors"
+                  >
+                    <span className="material-icons-outlined">delete_outline</span>
+                  </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div>
+                   <label className="block text-xs uppercase font-bold text-ash/60 dark:text-chalk/40 mb-1">Title</label>
+                   <input 
+                      type="text" 
+                      className="w-full px-3 py-2 bg-white dark:bg-white/5 border border-chalk dark:border-white/10 rounded-lg text-sm focus:ring-1 focus:ring-primary dark:focus:ring-accent text-primary dark:text-chalk"
+                      value={session.title}
+                      onChange={(e) => {
+                          const newSessions = [...(config.sessions || [])];
+                          newSessions[index] = { ...session, title: e.target.value };
+                          setConfig({ ...config, sessions: newSessions });
+                      }}
+                    />
+                 </div>
+                 <div>
+                   <label className="block text-xs uppercase font-bold text-ash/60 dark:text-chalk/40 mb-1">Date</label>
+                   <input 
+                      type="text" 
+                      className="w-full px-3 py-2 bg-white dark:bg-white/5 border border-chalk dark:border-white/10 rounded-lg text-sm focus:ring-1 focus:ring-primary dark:focus:ring-accent text-primary dark:text-chalk"
+                      value={session.date}
+                      onChange={(e) => {
+                          const newSessions = [...(config.sessions || [])];
+                          newSessions[index] = { ...session, date: e.target.value };
+                          setConfig({ ...config, sessions: newSessions });
+                      }}
+                    />
+                 </div>
+                 <div>
+                   <label className="block text-xs uppercase font-bold text-ash/60 dark:text-chalk/40 mb-1">Time</label>
+                   <input 
+                      type="text" 
+                      className="w-full px-3 py-2 bg-white dark:bg-white/5 border border-chalk dark:border-white/10 rounded-lg text-sm focus:ring-1 focus:ring-primary dark:focus:ring-accent text-primary dark:text-chalk"
+                      value={session.time}
+                      onChange={(e) => {
+                          const newSessions = [...(config.sessions || [])];
+                          newSessions[index] = { ...session, time: e.target.value };
+                          setConfig({ ...config, sessions: newSessions });
+                      }}
+                    />
+                 </div>
+                 <div>
+                   <label className="block text-xs uppercase font-bold text-ash/60 dark:text-chalk/40 mb-1">Location</label>
+                   <input 
+                      type="text" 
+                      className="w-full px-3 py-2 bg-white dark:bg-white/5 border border-chalk dark:border-white/10 rounded-lg text-sm focus:ring-1 focus:ring-primary dark:focus:ring-accent text-primary dark:text-chalk"
+                      value={session.location}
+                      onChange={(e) => {
+                          const newSessions = [...(config.sessions || [])];
+                          newSessions[index] = { ...session, location: e.target.value };
+                          setConfig({ ...config, sessions: newSessions });
+                      }}
+                    />
+                 </div>
+                 <div>
+                   <label className="block text-xs uppercase font-bold text-ash/60 dark:text-chalk/40 mb-1">Instructor</label>
+                   <input 
+                      type="text" 
+                      className="w-full px-3 py-2 bg-white dark:bg-white/5 border border-chalk dark:border-white/10 rounded-lg text-sm focus:ring-1 focus:ring-primary dark:focus:ring-accent text-primary dark:text-chalk"
+                      value={session.instructor}
+                      onChange={(e) => {
+                          const newSessions = [...(config.sessions || [])];
+                          newSessions[index] = { ...session, instructor: e.target.value };
+                          setConfig({ ...config, sessions: newSessions });
+                      }}
+                    />
+                 </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Tasks Config */}
       <div className="bg-white dark:bg-white/5 p-6 rounded-2xl shadow-sm border border-chalk dark:border-white/10">
         <div className="flex justify-between items-center mb-6">
@@ -190,6 +300,18 @@ export const AdminSettings: React.FC = () => {
                         value={task.description}
                         onChange={(e) => handleTaskChange(index, 'description', e.target.value)}
                         placeholder="e.g. Follow us on Twitter"
+                      />
+                   </div>
+
+                   {/* Link Line */}
+                   <div>
+                     <label className="block text-xs uppercase font-bold text-ash/60 dark:text-chalk/40 mb-1">Link URL (Optional)</label>
+                     <input 
+                        type="url" 
+                        className="w-full px-3 py-2 bg-white dark:bg-white/5 border border-chalk dark:border-white/10 rounded-lg text-sm focus:ring-1 focus:ring-primary dark:focus:ring-accent text-primary dark:text-chalk"
+                        value={task.link || ''}
+                        onChange={(e) => handleTaskChange(index, 'link', e.target.value)}
+                        placeholder="e.g. https://twitter.com/..."
                       />
                    </div>
 
@@ -228,6 +350,7 @@ export const AdminSettings: React.FC = () => {
                                     <option value="link">URL Link</option>
                                     <option value="username">Username</option>
                                     <option value="image">Image Upload</option>
+                                    <option value="yes_no">Yes / No</option>
                                 </select>
                              </div>
                           </>
@@ -235,13 +358,41 @@ export const AdminSettings: React.FC = () => {
                    </div>
                 </div>
 
-                <button 
-                  onClick={() => removeTask(index)}
-                  className="p-2 text-ash/40 hover:text-red-500 dark:text-chalk/20 dark:hover:text-red-400 transition-colors"
-                  title="Remove Task"
-                >
-                  <span className="material-icons-outlined">delete_outline</span>
-                </button>
+                <div className="flex flex-col gap-2">
+                  <button 
+                    onClick={() => {
+                        if (index === 0) return;
+                        const newTasks = [...config.tasks];
+                        [newTasks[index - 1], newTasks[index]] = [newTasks[index], newTasks[index - 1]];
+                        setConfig({ ...config, tasks: newTasks });
+                    }}
+                    disabled={index === 0}
+                    className="p-2 text-ash/40 hover:text-primary dark:text-chalk/20 dark:hover:text-white transition-colors disabled:opacity-30"
+                    title="Move Up"
+                  >
+                    <span className="material-icons-outlined">arrow_upward</span>
+                  </button>
+                  <button 
+                    onClick={() => {
+                        if (index === config.tasks.length - 1) return;
+                        const newTasks = [...config.tasks];
+                        [newTasks[index + 1], newTasks[index]] = [newTasks[index], newTasks[index + 1]];
+                        setConfig({ ...config, tasks: newTasks });
+                    }}
+                    disabled={index === config.tasks.length - 1}
+                    className="p-2 text-ash/40 hover:text-primary dark:text-chalk/20 dark:hover:text-white transition-colors disabled:opacity-30"
+                    title="Move Down"
+                  >
+                    <span className="material-icons-outlined">arrow_downward</span>
+                  </button>
+                  <button 
+                    onClick={() => removeTask(index)}
+                    className="p-2 text-ash/40 hover:text-red-500 dark:text-chalk/20 dark:hover:text-red-400 transition-colors"
+                    title="Remove Task"
+                  >
+                    <span className="material-icons-outlined">delete_outline</span>
+                  </button>
+                </div>
               </div>
             </div>
           ))}

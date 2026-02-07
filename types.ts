@@ -28,9 +28,10 @@ export interface InviteCode {
 export interface TaskConfig {
   id: string;
   description: string;
+  link?: string; // Optional link to be displayed with the description
   requiresProof: boolean;
   proofLabel?: string;
-  proofType: 'text' | 'link' | 'username' | 'image';
+  proofType: 'text' | 'link' | 'username' | 'image' | 'yes_no';
 }
 
 export interface ClassResource {
@@ -41,13 +42,24 @@ export interface ClassResource {
   type: 'video' | 'link' | 'stream' | 'community' | 'document';
 }
 
+export interface ClassSession {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  location: string;
+  instructor: string;
+  maxAttendees?: number;
+}
+
 export interface ClassConfig {
   title: string;
   description: string;
   acceptingApplications: boolean;
   tasks: TaskConfig[];
   resources: ClassResource[];
-  // Portal Specific Fields
+  sessions?: ClassSession[]; // New multiple sessions support
+  // Portal Specific Fields (Legacy/Global)
   date?: string;
   time?: string;
   location?: string;
@@ -66,6 +78,16 @@ export const DEFAULT_CLASS_INFO: ClassConfig = {
   instructor: "Sarah Drasner (Guest)",
   extraNotes: "Please prepare your local environment with Node.js v18+ and VS Code before joining. The Zoom link will be active 15 minutes prior.",
   lastUpdated: new Date().toLocaleDateString(),
+  sessions: [
+     {
+        id: "default-1",
+        title: "Main Session",
+        date: "October 15, 2024",
+        time: "10:00 AM - 2:00 PM PST",
+        location: "https://zoom.us/j/123456789",
+        instructor: "Sarah Drasner (Guest)"
+     }
+  ],
   tasks: [
     {
       id: "t1",
