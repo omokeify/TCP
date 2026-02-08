@@ -14,6 +14,7 @@ export interface Application {
   status: ApplicationStatus;
   submittedAt: string; // ISO Date string
   referrerId?: string; // Tracking who referred this applicant
+  adminNote?: string;
 }
 
 export interface InviteCode {
@@ -71,6 +72,11 @@ export interface ClassConfig {
   nameLabel?: string;
   emailLabel?: string;
   whyJoinLabel?: string;
+  stats?: {
+    approved: number;
+    total: number;
+  };
+  capacity?: number;
 }
 
 export const DEFAULT_CLASS_INFO: ClassConfig = {
@@ -83,6 +89,7 @@ export const DEFAULT_CLASS_INFO: ClassConfig = {
   instructor: "Sarah Drasner (Guest)",
   extraNotes: "Please prepare your local environment with Node.js v18+ and VS Code before joining. The Zoom link will be active 15 minutes prior.",
   lastUpdated: new Date().toLocaleDateString(),
+  capacity: 50,
   sessions: [
      {
         id: "default-1",

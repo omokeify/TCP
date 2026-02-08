@@ -22,7 +22,7 @@ To enable real email sending and Google Sheets database storage, follow these st
 1. Click the blue **Deploy** button (top right) -> **New deployment**.
 2. Click the "Select type" gear icon -> **Web app**.
 3. Fill in the details:
-   - **Description**: `v1`
+   - **Description**: `v7 - Stats & Batch Approve`
    - **Execute as**: `Me` (your email)
    - **Who has access**: `Anyone` (**Crucial**: This allows your app to talk to the sheet).
 4. Click **Deploy**.

@@ -12,6 +12,7 @@ export const ApplicationDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+  const [adminNote, setAdminNote] = useState('');
 
   useEffect(() => {
     if (!MockService.isAdminAuthenticated()) {
@@ -29,6 +30,7 @@ export const ApplicationDetail: React.FC = () => {
 
       if (appData) {
         setApp(appData);
+        setAdminNote(appData.adminNote || '');
         if (appData.status === ApplicationStatus.APPROVED) {
           const codes = await MockService.getCodes();
           const code = codes.find(c => c.applicationId === appData.id);
@@ -39,6 +41,20 @@ export const ApplicationDetail: React.FC = () => {
     };
     load();
   }, [id, navigate]);
+
+  const handleSaveNote = async () => {
+      if (!app) return;
+      setProcessing(true);
+      try {
+          await MockService.updateApplication(app.id, { adminNote });
+          setApp(prev => prev ? ({ ...prev, adminNote }) : null);
+          alert("Note saved!");
+      } catch (e) {
+          alert("Failed to save note");
+      } finally {
+          setProcessing(false);
+      }
+  };
 
   const handleAction = async (status: ApplicationStatus) => {
     if (!app) return;
@@ -197,6 +213,34 @@ export const ApplicationDetail: React.FC = () => {
                         })}
                      </div>
                 </div>
+            </div>
+        </div>
+
+        {/* Admin Note Section */}
+        <div className="space-y-4 border-t border-primary/5 dark:border-white/10 pt-12">
+             <div className="flex items-center gap-3 mb-6">
+                <div className="w-8 h-8 rounded bg-purple-500/20 flex items-center justify-center text-purple-600 dark:text-purple-300">
+                    <span className="material-icons-outlined text-sm">sticky_note_2</span>
+                </div>
+                <h2 className="text-2xl font-bold text-primary dark:text-chalk">Admin Note</h2>
+            </div>
+            <p className="text-sm text-ash dark:text-chalk/60">This note will be visible to the applicant in their portal.</p>
+            <div className="flex gap-4">
+                <textarea 
+                    value={adminNote}
+                    onChange={(e) => setAdminNote(e.target.value)}
+                    className="w-full bg-chalk/30 dark:bg-white/5 border border-primary/10 dark:border-white/10 rounded-xl p-4 min-h-[100px] text-primary dark:text-chalk focus:outline-none focus:border-accent transition-colors"
+                    placeholder="e.g. Welcome aboard! Please make sure to install Zoom before the class."
+                />
+            </div>
+            <div className="flex justify-end">
+                <button 
+                    onClick={handleSaveNote}
+                    disabled={processing}
+                    className="px-6 py-2 bg-primary dark:bg-white text-white dark:text-primary rounded-lg font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                    Save Note
+                </button>
             </div>
         </div>
 

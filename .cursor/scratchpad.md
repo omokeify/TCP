@@ -1,34 +1,34 @@
 # Project Status Board
 
 ## Background and Motivation
-The user encountered two critical issues:
-1.  **Persistence Failure**: Approving a user in the Admin Dashboard showed "Approved" briefly but reverted to "Pending" on refresh. This meant the backend update failed.
-2.  **Validation Failure**: Because the user remained "Pending" in the backend, their access code (`TCP-RSWZJC`) was rejected with "Invalid or expired" (or "Code not found").
+The user requested "HIGH-IMPACT, LOW-COMPLEXITY" features:
+1.  **Admin Notes**: Visible to users in portal.
+2.  **Class Countdown**: Timer on portal.
+3.  **Test Access**: Button to verify Zoom link/access.
 
 ## Key Challenges and Analysis
-*   **ID Mismatch**: The Google Apps Script used strict equality check (`==`) for IDs. If there were whitespace differences or type mismatches (though unlikely with strings), it failed silently.
-*   **Silent Failures**: The frontend `MockService` did not check the `success` flag from the backend response, leading to a "false positive" UI state until reload.
-*   **JSON Resilience**: If the `data` column in the sheet contained malformed JSON, the script might have crashed or behaved unpredictably.
+*   **Backend Update**: Admin Notes require storing extra data in the Google Sheet. The previous `updateStatus` function was too specific. I refactored it to `updateApplication` which accepts a partial object, allowing any field (like `adminNote`) to be updated and stored in the JSON blob.
+*   **Frontend Logic**: The portal needed to fetch specific application details (using the code stored in session) to display the personal note.
+*   **UI/UX**: Added "Countdown" for urgency and "Test Access" for reassurance.
 
 ## High-level Task Breakdown
-1.  **Fix Backend Script (`google_apps_script.js`)**:
-    *   Implement robust ID matching (`String(id).trim()`).
-    *   Add `try-catch` blocks around JSON parsing/stringifying to prevent crashes.
-    *   Ensure both the `status` column and the JSON blob are updated atomically.
-2.  **Fix Frontend Service (`mockDb.ts`)**:
-    *   Throw an error if the backend returns `success: false`, so the UI can alert the user instead of misleading them.
-3.  **Deployment**: Push changes and instruct user to redeploy.
+1.  **Backend**: Upgrade `google_apps_script.js` to v5 (Generic Updates).
+2.  **Frontend Service**: Update `mockDb.ts` to support `updateApplication`.
+3.  **Admin UI**: Add "Admin Note" textarea in `ApplicationDetail`.
+4.  **Portal UI**: Add Countdown, Test Access button, and Admin Note card.
 
 ## Current Status / Progress Tracking
-- [x] `google_apps_script.js` rewritten with robust ID matching and error handling.
-- [x] `mockDb.ts` updated to throw errors on backend failures.
-- [x] `DEPLOY.md` verified.
-- [x] Code pushed to GitHub (Pending).
+- [x] `google_apps_script.js` updated to v5.
+- [x] `mockDb.ts` updated.
+- [x] `types.ts` updated with `adminNote`.
+- [x] `ApplicationDetail.tsx` has Admin Note input.
+- [x] `ClassPortal.tsx` has Countdown, Test Access, and Note display.
+- [x] `DEPLOY.md` updated.
+- [x] Code committed (Pending push).
 
 ## Executor's Feedback or Assistance Requests
-**CRITICAL**: The user MUST re-deploy the Google Apps Script for these changes to take effect.
+**CRITICAL**: The user MUST re-deploy the Google Apps Script for Admin Notes to work.
 1. Copy new code from `scripts/google_apps_script.js`.
 2. Paste into Apps Script Editor.
 3. **Deploy -> New Deployment**.
-4. Update URL in Dashboard (if changed).
-5. **Try Approving the user again.**
+4. Use the new URL (if changed, usually stays same if you update project properly, but "New Deployment" is safest).

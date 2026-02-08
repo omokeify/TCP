@@ -138,19 +138,52 @@ export const MockService = {
   },
 
   updateApplicationStatus: async (id: string, status: ApplicationStatus): Promise<void> => {
+    return MockService.updateApplication(id, { status });
+  },
+
+  updateApplication: async (id: string, updates: Partial<Application>): Promise<void> => {
     const dbUrl = MockService.getDbUrl();
     if (dbUrl) {
-       const res = await MockService.callScript('update_status', 'POST', { id, status });
+       const res = await MockService.callScript('update_application', 'POST', { id, updates });
        if (!res.success) {
-         throw new Error(res.message || "Failed to update status remotely");
+         throw new Error(res.message || "Failed to update application remotely");
        }
        return;
     }
 
     await delay(400);
     const apps = await MockService.getApplications();
-    const updated = apps.map((app) => (app.id === id ? { ...app, status } : app));
+    const updated = apps.map((app) => (app.id === id ? { ...app, ...updates } : app));
     localStorage.setItem(APPS_KEY, JSON.stringify(updated));
+  },
+
+  batchApproveApplications: async (ids: string[]): Promise<{ success: boolean; count: number }> => {
+    const dbUrl = MockService.getDbUrl();
+    if (dbUrl) {
+       const res = await MockService.callScript('batch_approve', 'POST', { ids });
+       if (!res.success) {
+         throw new Error(res.message || "Remote batch approval failed");
+       }
+       return { success: true, count: res.count };
+    }
+
+    // Local simulation
+    await delay(1000);
+    const apps = await MockService.getApplications();
+    const updatedApps = [...apps];
+    let count = 0;
+    
+    for (const id of ids) {
+        const index = updatedApps.findIndex(a => a.id === id);
+        if (index !== -1 && updatedApps[index].status === ApplicationStatus.PENDING) {
+            updatedApps[index] = { ...updatedApps[index], status: ApplicationStatus.APPROVED };
+            await MockService.generateCode(updatedApps[index].id, updatedApps[index].email);
+            count++;
+        }
+    }
+    
+    localStorage.setItem(APPS_KEY, JSON.stringify(updatedApps));
+    return { success: true, count };
   },
 
   // --- Codes ---

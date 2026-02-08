@@ -11,6 +11,7 @@ export const AdminDashboard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDark, setIsDark] = useState(false);
   const [reminding, setReminding] = useState(false);
+  const [batchProcessing, setBatchProcessing] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -72,6 +73,27 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleBatchApprove = async () => {
+    const pendingApps = apps.filter(a => a.status === ApplicationStatus.PENDING);
+    if (pendingApps.length === 0) return;
+
+    if (!window.confirm(`Are you sure you want to approve ALL ${pendingApps.length} pending applications?\n\nThis will generate codes and send emails to everyone.`)) {
+        return;
+    }
+
+    setBatchProcessing(true);
+    try {
+        const ids = pendingApps.map(a => a.id);
+        const res = await MockService.batchApproveApplications(ids);
+        alert(`Successfully approved ${res.count} applications.`);
+        await loadData();
+    } catch (e) {
+        alert("Failed to batch approve: " + (e as Error).message);
+    } finally {
+        setBatchProcessing(false);
+    }
+  };
+
   const filteredApps = apps.filter(app => {
     const matchesFilter = filter === 'all' || app.status === filter;
     const matchesSearch = app.email.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -101,6 +123,14 @@ export const AdminDashboard: React.FC = () => {
           <p className="text-ash dark:text-chalk/60 mt-1">Review and approve pending requests for class access.</p>
         </div>
         <div className="flex items-center gap-3">
+          <button 
+             onClick={handleBatchApprove}
+             disabled={batchProcessing || stats.pending === 0}
+             className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white border-2 border-green-600 rounded-lg font-bold hover:bg-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+             <span className="material-icons-outlined text-sm">done_all</span>
+             {batchProcessing ? 'Approving...' : `Approve All (${stats.pending})`}
+          </button>
           <button 
              onClick={handleTriggerReminders}
              disabled={reminding}

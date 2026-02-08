@@ -8,7 +8,7 @@
  * 4. Save the project (Ctrl+S)
  * 5. Click "Deploy" -> "New deployment"
  * 6. Select type: "Web app"
- * 7. Description: "Blink API v4 - Fix Persistence"
+ * 11. Description: "Blink API v5 - Admin Notes"
  * 8. Execute as: "Me"
  * 9. Who has access: "Anyone" (Important for the app to access it)
  * 10. Click "Deploy"
@@ -75,8 +75,8 @@ function handleRequest(e) {
       case 'get_applications':
         result = getApplications();
         break;
-      case 'update_status':
-        result = updateStatus(data.id, data.status);
+      case 'update_application':
+        result = updateApplication(data.id, data.updates);
         break;
       case 'generate_code':
         result = generateCode(data);
@@ -89,6 +89,9 @@ function handleRequest(e) {
         break;
       case 'trigger_reminders':
         result = triggerReminders();
+        break;
+      case 'batch_approve':
+        result = batchApprove(data.ids);
         break;
       default:
         result = { error: "Unknown action: " + action };
@@ -138,15 +141,32 @@ function setupSheets() {
 
 function getConfig() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName(SHEET_NAMES.CONFIG);
-  if (!sheet) return {}; 
+  let config = {};
   
-  const val = sheet.getRange('A1').getValue();
-  try {
-    return val ? JSON.parse(val) : {};
-  } catch (e) {
-    return {};
+  // 1. Load Config
+  let sheet = ss.getSheetByName(SHEET_NAMES.CONFIG);
+  if (sheet) {
+    const val = sheet.getRange('A1').getValue();
+    try {
+      config = val ? JSON.parse(val) : {};
+    } catch (e) { }
   }
+  
+  // 2. Load Stats
+  let appSheet = ss.getSheetByName(SHEET_NAMES.APPLICATIONS);
+  if (appSheet) {
+    const data = appSheet.getDataRange().getValues();
+    let approved = 0;
+    // Column 3 (index 2) is status
+    for (let i = 1; i < data.length; i++) {
+       if (String(data[i][2]).toLowerCase() === 'approved') {
+         approved++;
+       }
+    }
+    config.stats = { approved, total: Math.max(0, data.length - 1) };
+  }
+  
+  return config;
 }
 
 function updateConfig(config) {
@@ -193,7 +213,7 @@ function getApplications() {
   return apps.reverse();
 }
 
-function updateStatus(id, status) {
+function updateApplication(id, updates) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(SHEET_NAMES.APPLICATIONS);
   if (!sheet) return { success: false, message: "Sheet not found" };
@@ -207,8 +227,10 @@ function updateStatus(id, status) {
     
     if (rowId === targetId) {
       try {
-        // Update Status Column (Column 3 / index 2)
-        sheet.getRange(i + 1, 3).setValue(status);
+        // If status is being updated, update the dedicated column (Column 3 / index 2)
+        if (updates.status) {
+            sheet.getRange(i + 1, 3).setValue(updates.status);
+        }
         
         // Update JSON Blob (Column 5 / index 4)
         let app = {};
@@ -219,7 +241,11 @@ function updateStatus(id, status) {
             app = { id: rowId, email: data[i][1], submittedAt: data[i][3] };
         }
         
-        app.status = status;
+        // Merge updates
+        Object.keys(updates).forEach(key => {
+            app[key] = updates[key];
+        });
+        
         sheet.getRange(i + 1, 5).setValue(JSON.stringify(app));
         
         return { success: true };
@@ -229,6 +255,53 @@ function updateStatus(id, status) {
     }
   }
   return { success: false, message: "Application ID not found: " + targetId };
+}
+
+function batchApprove(ids) {
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    return { success: false, message: "No IDs provided" };
+  }
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const appSheet = ss.getSheetByName(SHEET_NAMES.APPLICATIONS);
+  if (!appSheet) return { success: false, message: "App sheet not found" };
+
+  const data = appSheet.getDataRange().getValues();
+  let approvedCount = 0;
+  
+  const targetIds = new Set(ids.map(id => String(id).trim()));
+  
+  for (let i = 1; i < data.length; i++) {
+    const rowId = String(data[i][0]).trim();
+    
+    if (targetIds.has(rowId)) {
+      const currentStatus = String(data[i][2]).toLowerCase();
+      
+      if (currentStatus !== 'approved') {
+         try {
+             // Update Status Column
+             appSheet.getRange(i + 1, 3).setValue('approved');
+             
+             // Update JSON
+             let app = {};
+             try { app = JSON.parse(data[i][4]); } catch(e) { 
+                 app = { id: rowId, email: data[i][1], submittedAt: data[i][3] }; 
+             }
+             app.status = 'approved';
+             appSheet.getRange(i + 1, 5).setValue(JSON.stringify(app));
+             
+             // Generate Code & Email
+             generateCode({ applicationId: rowId, email: data[i][1] });
+             
+             approvedCount++;
+         } catch (e) {
+             console.log("Failed to approve " + rowId + ": " + e.toString());
+         }
+      }
+    }
+  }
+  
+  return { success: true, count: approvedCount };
 }
 
 function generateCode(data) {
@@ -409,16 +482,11 @@ function sendEmail(recipient, code) {
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
       <h2 style="color: #3B472F;">Welcome!</h2>
       <p>Your application has been approved. Here is your exclusive access code:</p>
-      
       <div style="background-color: #f5f5f5; padding: 15px; text-align: center; border-radius: 5px; margin: 20px 0;">
         <span style="font-size: 24px; font-weight: bold; font-family: monospace; letter-spacing: 2px;">${code}</span>
       </div>
-      
       <p>Please enter this code on the access page to enter the portal.</p>
-      
-      <p style="color: #888; font-size: 12px; margin-top: 30px;">
-        If you did not request this, please ignore this email.
-      </p>
+      <p style="color: #888; font-size: 12px; margin-top: 30px;">If you did not request this, please ignore this email.</p>
     </div>
   `;
   

@@ -1,12 +1,50 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MockService } from '../services/mockDb';
-import { ClassConfig, DEFAULT_CLASS_INFO } from '../types';
+import { ClassConfig, DEFAULT_CLASS_INFO, Application } from '../types';
+
+const Countdown = ({ targetDate }: { targetDate: Date }) => {
+    const [timeLeft, setTimeLeft] = useState<{days: number, hours: number, minutes: number, seconds: number} | null>(null);
+
+    useEffect(() => {
+        const calculate = () => {
+            const now = new Date();
+            const diff = targetDate.getTime() - now.getTime();
+            if (diff <= 0) {
+                setTimeLeft(null); // Started
+                return;
+            }
+            setTimeLeft({
+                days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+                hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+                minutes: Math.floor((diff / 1000 / 60) % 60),
+                seconds: Math.floor((diff / 1000) % 60)
+            });
+        };
+        calculate();
+        const interval = setInterval(calculate, 1000);
+        return () => clearInterval(interval);
+    }, [targetDate]);
+
+    if (!timeLeft) return <div className="inline-block px-3 py-1 bg-red-100 text-red-600 rounded-full text-xs font-bold animate-pulse">HAPPENING NOW</div>;
+
+    return (
+        <div className="flex gap-3 text-center bg-white/50 px-4 py-2 rounded-xl border border-white/50">
+            {Object.entries(timeLeft).map(([unit, value]) => (
+                <div key={unit} className="flex flex-col min-w-[30px]">
+                    <span className="text-xl font-bold font-mono text-[var(--primary)] leading-none">{String(value).padStart(2, '0')}</span>
+                    <span className="text-[8px] uppercase text-[var(--ash)] tracking-wider mt-1">{unit}</span>
+                </div>
+            ))}
+        </div>
+    );
+};
 
 export const ClassPortal: React.FC = () => {
   const navigate = useNavigate();
   const [classConfig, setClassConfig] = useState<ClassConfig | null>(null);
   const [userCode, setUserCode] = useState<string>('');
+  const [application, setApplication] = useState<Application | null>(null);
 
   useEffect(() => {
     const hasAccess = sessionStorage.getItem('blink_class_access');
@@ -23,6 +61,18 @@ export const ClassPortal: React.FC = () => {
         const config = await MockService.getClassConfig();
         const mergedConfig = { ...DEFAULT_CLASS_INFO, ...config };
         setClassConfig(mergedConfig);
+
+        // Load Application for Admin Note
+        if (code) {
+             try {
+                 const codes = await MockService.getCodes();
+                 const codeEntry = codes.find(c => c.code === code);
+                 if (codeEntry) {
+                     const app = await MockService.getApplicationById(codeEntry.applicationId);
+                     if (app) setApplication(app);
+                 }
+             } catch (e) { console.error("Failed to load application details", e); }
+        }
     };
     loadConfig();
   }, [navigate]);
@@ -194,9 +244,17 @@ export const ClassPortal: React.FC = () => {
 
       <main className="max-w-6xl mx-auto px-6 pt-12 pb-20">
         <header className="mb-12 text-center md:text-left">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[var(--accent)] text-[var(--primary)] rounded-full text-xs font-bold mb-4">
-                <span className="material-icons-outlined text-[16px] leading-none">verified</span>
-                Invite Code Redeemed
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-4">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[var(--accent)] text-[var(--primary)] rounded-full text-xs font-bold">
+                    <span className="material-icons-outlined text-[16px] leading-none">verified</span>
+                    Invite Code Redeemed
+                </div>
+                {classConfig.stats && classConfig.capacity && (
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/50 text-[var(--primary)] rounded-full text-xs font-bold border border-[var(--primary)]/10 backdrop-blur-sm">
+                        <span className="material-icons-outlined text-[16px] leading-none">group</span>
+                        {classConfig.stats.approved} of {classConfig.capacity} spots filled
+                    </div>
+                )}
             </div>
             <h1 className="text-4xl md:text-6xl font-extrabold text-[var(--primary)] nohemi-tracking mb-4">
                 Welcome to the Class 🎉
@@ -219,9 +277,12 @@ export const ClassPortal: React.FC = () => {
                             <div key={session.id || index} className="relative">
                                 {index > 0 && <div className="w-full h-px bg-[var(--primary)]/10 mb-12"></div>}
                                 <div className="mb-10">
-                                    <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--ash)] mb-2 block">
-                                        {sessions.length > 1 ? `Session ${index + 1}` : 'Current Session'}
-                                    </span>
+                                    <div className="flex justify-between items-start mb-4">
+                                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--ash)] mt-2 block">
+                                            {sessions.length > 1 ? `Session ${index + 1}` : 'Current Session'}
+                                        </span>
+                                        {parseDates(session) && <Countdown targetDate={parseDates(session)!.start} />}
+                                    </div>
                                     <h2 className="text-3xl md:text-4xl font-extrabold text-[var(--primary)] nohemi-tracking mb-6 leading-tight">
                                         {session.title}
                                     </h2>
@@ -266,6 +327,7 @@ export const ClassPortal: React.FC = () => {
                                     
                                     <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                                         {isLink(session.location) && (
+                                            <>
                                             <a 
                                                 href={session.location} 
                                                 target="_blank" 
@@ -274,6 +336,15 @@ export const ClassPortal: React.FC = () => {
                                             >
                                                 Join Meeting
                                             </a>
+                                            <button
+                                                onClick={() => window.open(session.location, '_blank')}
+                                                className="px-6 py-4 bg-white/10 text-white rounded-2xl font-bold hover:bg-white/20 transition-colors flex items-center gap-2 whitespace-nowrap"
+                                                title="Check if link works"
+                                            >
+                                                <span className="material-icons-outlined text-sm">wifi_tethering</span>
+                                                Test Access
+                                            </button>
+                                            </>
                                         )}
                                         {hasCalendar && (
                                             <div className="flex gap-2 justify-center">
@@ -302,6 +373,22 @@ export const ClassPortal: React.FC = () => {
 
                 {/* Right Column: Instructor & Notes */}
                 <div className="lg:col-span-5 flex flex-col gap-6">
+                    {/* Admin Note Card */}
+                    {application?.adminNote && (
+                        <div className="glass-card p-8 bg-[var(--accent)]/10 border-[var(--accent)]/20 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                                <span className="material-icons-outlined text-6xl text-[var(--primary)]">format_quote</span>
+                            </div>
+                            <div className="flex items-center gap-3 mb-4 relative z-10">
+                                <span className="material-icons-outlined text-[var(--primary)]">campaign</span>
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--primary)] opacity-60">Note from Admin</p>
+                            </div>
+                            <p className="text-lg font-medium text-[var(--primary)] leading-relaxed relative z-10 whitespace-pre-wrap">
+                                {application.adminNote}
+                            </p>
+                        </div>
+                    )}
+
                     {/* Instructor Card */}
                     <div className="glass-card p-8">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--ash)] mb-6">Instructor</p>
