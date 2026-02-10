@@ -106,23 +106,31 @@ export const QuestBoard: React.FC = () => {
                 </div>
             ) : (
                 <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {classConfig.questSets?.map((quest) => (
+                    {classConfig.questSets?.filter(q => q.status !== 'draft').map((quest) => (
                         <div 
                             key={quest.id} 
                             onClick={() => {
+                                if (quest.status === 'completed') return;
                                 const ref = searchParams.get('ref');
                                 navigate(ref ? `/quests/${quest.id}?ref=${ref}` : `/quests/${quest.id}`);
                             }}
-                            className="glass-card p-8 flex flex-col h-full cursor-pointer group"
+                            className={`glass-card p-8 flex flex-col h-full cursor-pointer group ${quest.status === 'completed' ? 'opacity-70 grayscale' : ''}`}
                         >
                             <div className="flex justify-between items-start mb-6">
-                                <span className={`px-3 py-1 text-[var(--primary)] text-[10px] font-bold uppercase tracking-wider rounded-full ${
-                                    quest.category === 'Foundation' ? 'bg-[var(--accent)]' : 
-                                    quest.category === 'Composition' ? 'bg-[var(--eucalyptus)]' : 
-                                    'bg-white/50'
-                                }`}>
-                                    {quest.category}
-                                </span>
+                                <div className="flex gap-2">
+                                    <span className={`px-3 py-1 text-[var(--primary)] text-[10px] font-bold uppercase tracking-wider rounded-full ${
+                                        quest.category === 'Foundation' ? 'bg-[var(--accent)]' : 
+                                        quest.category === 'Composition' ? 'bg-[var(--eucalyptus)]' : 
+                                        'bg-white/50'
+                                    }`}>
+                                        {quest.category}
+                                    </span>
+                                    {quest.status === 'completed' && (
+                                        <span className="px-3 py-1 bg-gray-200 text-gray-600 text-[10px] font-bold uppercase tracking-wider rounded-full">
+                                            Completed
+                                        </span>
+                                    )}
+                                </div>
                                 <div className="flex items-center gap-1 text-[var(--ash)]">
                                     <span className="material-icons-outlined text-sm">signal_cellular_alt</span>
                                     <span className="text-[10px] font-bold uppercase tracking-widest">{quest.level}</span>
@@ -146,10 +154,17 @@ export const QuestBoard: React.FC = () => {
                                         />
                                     )}
                                 </div>
-                                <button className="px-5 py-2.5 bg-[var(--primary)] text-white rounded-xl font-bold text-xs group-hover:bg-[var(--primary)]/90 transition-colors flex items-center gap-2">
-                                    Start Quest
-                                    <span className="material-icons-outlined text-[16px]">arrow_forward</span>
-                                </button>
+                                {quest.status === 'completed' ? (
+                                    <button disabled className="px-5 py-2.5 bg-gray-300 text-gray-500 rounded-xl font-bold text-xs cursor-not-allowed flex items-center gap-2">
+                                        Ended
+                                        <span className="material-icons-outlined text-[16px]">lock</span>
+                                    </button>
+                                ) : (
+                                    <button className="px-5 py-2.5 bg-[var(--primary)] text-white rounded-xl font-bold text-xs group-hover:bg-[var(--primary)]/90 transition-colors flex items-center gap-2">
+                                        Start Quest
+                                        <span className="material-icons-outlined text-[16px]">arrow_forward</span>
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ))}

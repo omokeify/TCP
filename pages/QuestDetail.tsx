@@ -269,7 +269,7 @@ export const QuestDetail: React.FC = () => {
                         <div className="space-y-4 mb-8 pb-8 border-b border-[var(--primary)]/10">
                              <div>
                                 <label className="block text-sm font-bold text-[var(--primary)] mb-1">
-                                    {classConfig.nameLabel || "Full Name"}
+                                    {questSet.customFields?.nameLabel || classConfig.nameLabel || "Full Name"}
                                 </label>
                                 <input
                                     required
@@ -283,7 +283,7 @@ export const QuestDetail: React.FC = () => {
                             </div>
                             <div>
                                 <label className="block text-sm font-bold text-[var(--primary)] mb-1">
-                                    {classConfig.emailLabel || "Email Address"}
+                                    {questSet.customFields?.emailLabel || classConfig.emailLabel || "Email Address"}
                                 </label>
                                 <input
                                     required
@@ -297,7 +297,7 @@ export const QuestDetail: React.FC = () => {
                             </div>
                              <div>
                                 <label className="block text-sm font-bold text-[var(--primary)] mb-1">
-                                    {classConfig.whyJoinLabel || "Why do you want to join?"}
+                                    {questSet.customFields?.whyJoinLabel || classConfig.whyJoinLabel || "Why do you want to join?"}
                                 </label>
                                 <textarea
                                     required

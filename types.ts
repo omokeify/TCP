@@ -46,6 +46,7 @@ export interface ClassResource {
 export interface ClassSession {
   id: string;
   title: string;
+  description?: string;
   date: string;
   time: string;
   location: string;
@@ -60,6 +61,25 @@ export interface QuestSet {
   category: string;
   level: 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert';
   tasks: TaskConfig[];
+  
+  // Quest Card Specifics
+  status: 'active' | 'completed' | 'draft';
+  instructor?: string;
+  capacity?: number;
+  sessions?: ClassSession[];
+  extraNotes?: string; // Added for per-quest portal notes
+  
+  // Custom Form Fields
+  customFields?: {
+      whyJoinLabel?: string;
+      nameLabel?: string;
+      emailLabel?: string;
+  };
+
+  // Class Content & Resources (Quest Specific)
+  resources?: ClassResource[];
+
+  // Legacy/UI
   tutor?: {
     name: string;
     avatarUrl: string;
@@ -67,13 +87,16 @@ export interface QuestSet {
 }
 
 export interface ClassConfig {
-  title: string;
-  description: string;
-  acceptingApplications: boolean;
-  tasks: TaskConfig[];
-  questSets?: QuestSet[];
+  title: string; // Global Brand Title
+  description: string; // Global Brand Description
+  acceptingApplications: boolean; // Global Kill Switch
+  
+  // Global Defaults (can be overridden by Quest)
+  tasks: TaskConfig[]; 
   resources: ClassResource[];
-  sessions?: ClassSession[]; // New multiple sessions support
+  sessions?: ClassSession[]; 
+  questSets?: QuestSet[];
+
   // Portal Specific Fields (Legacy/Global)
   date?: string;
   time?: string;
@@ -82,7 +105,7 @@ export interface ClassConfig {
   extraNotes?: string;
   lastUpdated?: string;
   
-  // Custom Labels for Standard Fields
+  // Custom Labels for Standard Fields (Global Fallback)
   nameLabel?: string;
   emailLabel?: string;
   whyJoinLabel?: string;
@@ -120,9 +143,22 @@ export const DEFAULT_CLASS_INFO: ClassConfig = {
       description: "Embrace the flow state of AI-assisted development. Learn to guide LLMs to build complex systems while you maintain the creative vision.",
       category: "Methodology",
       level: "Advanced",
+      status: "active",
+      instructor: "Fredy",
+      capacity: 50,
+      sessions: [
+         {
+            id: "q1-s1",
+            title: "Live Workshop",
+            date: "October 15, 2030",
+            time: "2:00 PM EST",
+            location: "Google Meet",
+            instructor: "Fredy"
+         }
+      ],
       tutor: {
-        name: "Cursor",
-        avatarUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuDYJ91P9Vny1TW_oWCNEHPcSOm010AUKW5oTz5dGWCy4cT9FWoY3AVTvr5Aocascp6iC1xvm0-DkQr5mrAnDKreo96AXENEhD3ypc4irBipe6ph62tpUyurPMzn0luGhIkTno_s437cQ9H2wH8H0IZKqBJ1Omu98br1stFffblADeWCs4JFdZSvk3ZiDEGgldGTEVcW2PaaDifSITGiDt9jZdqs7e9ktBQQK6UbrIOaCHzrQDDISOBCe6laMwYdXU3sljVkL_4DtQsG"
+        name: "Fredy",
+        avatarUrl: "https://pbs.twimg.com/profile_images/1593132069639524352/7Y7dZ0jM_400x400.jpg"
       },
       tasks: [
         {
@@ -179,14 +215,7 @@ export const DEFAULT_CLASS_INFO: ClassConfig = {
       ]
     }
   ],
-  tasks: [
-    {
-      id: "t2",
-      description: "Share why you want to join (min 50 words)",
-      requiresProof: false,
-      proofType: "text"
-    }
-  ],
+  tasks: [], // Global tasks cleared as requested previously
   resources: [
     {
       id: "r1",
