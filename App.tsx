@@ -5,6 +5,8 @@ import { Apply } from './pages/Apply';
 import { Status } from './pages/Status';
 import { Access } from './pages/Access';
 import { ClassPortal } from './pages/ClassPortal';
+import { QuestBoard } from './pages/QuestBoard';
+import { QuestDetail } from './pages/QuestDetail';
 import { AdminLogin } from './pages/admin/AdminLogin';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { ApplicationDetail } from './pages/admin/ApplicationDetail';
@@ -16,11 +18,13 @@ function App() {
       <Layout>
         <Routes>
           {/* Public Flow */}
-          <Route path="/" element={<Navigate to="/apply" replace />} />
-          <Route path="/apply" element={<Apply />} />
+          <Route path="/" element={<Apply />} />
+          <Route path="/apply" element={<Navigate to="/" replace />} />
           <Route path="/status" element={<Status />} />
           <Route path="/access" element={<Access />} />
           <Route path="/portal" element={<ClassPortal />} />
+          <Route path="/quests" element={<QuestBoard />} />
+          <Route path="/quests/:questSetId" element={<QuestDetail />} />
 
           {/* Legacy redirect */}
           <Route path="/content" element={<Navigate to="/portal" replace />} />

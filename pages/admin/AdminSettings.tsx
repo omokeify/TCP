@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MockService } from '../../services/mockDb';
-import { ClassConfig, DEFAULT_CLASS_INFO, TaskConfig, ClassResource } from '../../types';
+import { ClassConfig, DEFAULT_CLASS_INFO, TaskConfig, ClassResource, QuestSet } from '../../types';
 
 export const AdminSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -113,6 +113,69 @@ export const AdminSettings: React.FC = () => {
     setConfig({ ...config, resources: newResources });
   };
 
+  // --- Quest Set Management (Sessions) ---
+  const handleQuestSetChange = (index: number, field: keyof QuestSet, value: any) => {
+      const newQuestSets = [...(config.questSets || [])];
+      newQuestSets[index] = { ...newQuestSets[index], [field]: value };
+      setConfig({ ...config, questSets: newQuestSets });
+  };
+
+  const handleQuestTutorChange = (index: number, field: 'name' | 'avatarUrl', value: string) => {
+      const newQuestSets = [...(config.questSets || [])];
+      const currentTutor = newQuestSets[index].tutor || { name: '', avatarUrl: '' };
+      newQuestSets[index] = { 
+          ...newQuestSets[index], 
+          tutor: { ...currentTutor, [field]: value } 
+      };
+      setConfig({ ...config, questSets: newQuestSets });
+  };
+
+  const addQuestSet = () => {
+      const newQuestSet: QuestSet = {
+          id: Math.random().toString(36).substr(2, 9),
+          title: "New Session / Quest Set",
+          description: "Description of the session content",
+          category: "General",
+          level: "Beginner",
+          tasks: [],
+          tutor: { name: "Tutor", avatarUrl: "" }
+      };
+      setConfig({ ...config, questSets: [...(config.questSets || []), newQuestSet] });
+  };
+
+  const removeQuestSet = (index: number) => {
+      const newQuestSets = [...(config.questSets || [])];
+      newQuestSets.splice(index, 1);
+      setConfig({ ...config, questSets: newQuestSets });
+  };
+
+  const addQuestTask = (questIndex: number) => {
+      const newQuestSets = [...(config.questSets || [])];
+      const newTask: TaskConfig = {
+          id: Math.random().toString(36).substr(2, 9),
+          description: "New Task",
+          requiresProof: true,
+          proofType: "link"
+      };
+      newQuestSets[questIndex].tasks.push(newTask);
+      setConfig({ ...config, questSets: newQuestSets });
+  };
+
+  const removeQuestTask = (questIndex: number, taskIndex: number) => {
+      const newQuestSets = [...(config.questSets || [])];
+      newQuestSets[questIndex].tasks.splice(taskIndex, 1);
+      setConfig({ ...config, questSets: newQuestSets });
+  };
+
+  const handleQuestTaskChange = (questIndex: number, taskIndex: number, field: keyof TaskConfig, value: any) => {
+      const newQuestSets = [...(config.questSets || [])];
+      newQuestSets[questIndex].tasks[taskIndex] = { 
+          ...newQuestSets[questIndex].tasks[taskIndex], 
+          [field]: value 
+      };
+      setConfig({ ...config, questSets: newQuestSets });
+  };
+
   if (loading) return <div className="p-8 text-primary">Loading settings...</div>;
 
   return (
@@ -145,8 +208,8 @@ export const AdminSettings: React.FC = () => {
               <h2 className="text-lg font-bold text-primary dark:text-white">Open Applications</h2>
               <p className="text-sm text-ash dark:text-chalk/60">
                   {config.acceptingApplications 
-                    ? "Applications are open. The form is visible on the landing page." 
-                    : "Applications are closed. The form is hidden on the landing page."}
+                    ? "Applications are open. Users can browse quests and submit applications via the Quests page." 
+                    : "Applications are closed. The Quests page will show a closed message."}
               </p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
@@ -174,6 +237,16 @@ export const AdminSettings: React.FC = () => {
             />
           </div>
           <div>
+            <label className="block text-sm font-semibold text-ash dark:text-chalk/80 mb-1">Instructor (Class Host)</label>
+            <input 
+              type="text" 
+              className="w-full px-4 py-2 bg-chalk/30 dark:bg-white/5 border border-chalk dark:border-white/10 rounded-lg focus:ring-2 focus:ring-primary dark:focus:ring-accent text-primary dark:text-chalk"
+              value={config.instructor || ''}
+              onChange={(e) => setConfig({ ...config, instructor: e.target.value })}
+              placeholder="e.g. Sarah Drasner"
+            />
+          </div>
+          <div>
             <label className="block text-sm font-semibold text-ash dark:text-chalk/80 mb-1">Description</label>
             <textarea 
               rows={3}
@@ -181,6 +254,27 @@ export const AdminSettings: React.FC = () => {
               value={config.description}
               onChange={(e) => setConfig({ ...config, description: e.target.value })}
             />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-ash dark:text-chalk/80 mb-1">Extra Notes (Portal Only)</label>
+            <textarea 
+              rows={3}
+              className="w-full px-4 py-2 bg-chalk/30 dark:bg-white/5 border border-chalk dark:border-white/10 rounded-lg focus:ring-2 focus:ring-primary dark:focus:ring-accent text-primary dark:text-chalk resize-none"
+              value={config.extraNotes || ''}
+              onChange={(e) => setConfig({ ...config, extraNotes: e.target.value })}
+              placeholder="Additional info visible only to accepted students in the portal."
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-ash dark:text-chalk/80 mb-1">Class Capacity</label>
+            <input 
+              type="number" 
+              className="w-full px-4 py-2 bg-chalk/30 dark:bg-white/5 border border-chalk dark:border-white/10 rounded-lg focus:ring-2 focus:ring-primary dark:focus:ring-accent text-primary dark:text-chalk"
+              value={config.capacity || 50}
+              onChange={(e) => setConfig({ ...config, capacity: parseInt(e.target.value) || 0 })}
+              placeholder="e.g. 50"
+            />
+            <p className="text-xs text-ash/60 mt-1">Used to calculate 'Spots Left' indicator (Approved vs Capacity).</p>
           </div>
         </div>
       </div>
@@ -471,6 +565,156 @@ export const AdminSettings: React.FC = () => {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Quest Sets (Sessions) Config */}
+      <div className="bg-white dark:bg-white/5 p-6 rounded-2xl shadow-sm border border-chalk dark:border-white/10">
+        <div className="flex justify-between items-center mb-6">
+            <h2 className="text-lg font-bold text-primary dark:text-white">Quest Sets (Sessions)</h2>
+            <button 
+                onClick={addQuestSet}
+                className="px-3 py-1.5 bg-accent/20 text-primary dark:text-accent rounded-lg text-sm font-bold hover:bg-accent hover:text-primary transition-colors flex items-center gap-1"
+            >
+                <span className="material-icons-outlined text-sm">add</span> Add Session
+            </button>
+        </div>
+
+        <div className="space-y-6">
+            {config.questSets?.map((quest, qIndex) => (
+                <div key={quest.id || qIndex} className="p-6 rounded-xl border border-chalk dark:border-white/10 bg-chalk/10 dark:bg-white/5">
+                    {/* Header with Title and Delete */}
+                    <div className="flex justify-between items-start mb-4 border-b border-ash/10 pb-4">
+                        <div className="flex-1 mr-4">
+                            <label className="block text-xs uppercase font-bold text-ash/60 dark:text-chalk/40 mb-1">Session Title</label>
+                            <input 
+                                type="text" 
+                                className="w-full px-3 py-2 bg-white dark:bg-white/5 border border-chalk dark:border-white/10 rounded-lg font-bold text-lg focus:ring-1 focus:ring-primary dark:focus:ring-accent text-primary dark:text-chalk"
+                                value={quest.title}
+                                onChange={(e) => handleQuestSetChange(qIndex, 'title', e.target.value)}
+                            />
+                        </div>
+                        <button 
+                            onClick={() => removeQuestSet(qIndex)}
+                            className="p-2 text-ash/40 hover:text-red-500 dark:text-chalk/20 dark:hover:text-red-400 transition-colors bg-white dark:bg-white/5 rounded-lg border border-chalk dark:border-white/10"
+                            title="Delete Session"
+                        >
+                            <span className="material-icons-outlined">delete_outline</span>
+                        </button>
+                    </div>
+
+                    {/* Quest Details Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div className="md:col-span-2">
+                             <label className="block text-xs uppercase font-bold text-ash/60 dark:text-chalk/40 mb-1">Description</label>
+                             <textarea 
+                                rows={2}
+                                className="w-full px-3 py-2 bg-white dark:bg-white/5 border border-chalk dark:border-white/10 rounded-lg text-sm focus:ring-1 focus:ring-primary dark:focus:ring-accent text-primary dark:text-chalk resize-none"
+                                value={quest.description}
+                                onChange={(e) => handleQuestSetChange(qIndex, 'description', e.target.value)}
+                             />
+                        </div>
+                        <div>
+                             <label className="block text-xs uppercase font-bold text-ash/60 dark:text-chalk/40 mb-1">Category</label>
+                             <input 
+                                type="text" 
+                                className="w-full px-3 py-2 bg-white dark:bg-white/5 border border-chalk dark:border-white/10 rounded-lg text-sm focus:ring-1 focus:ring-primary dark:focus:ring-accent text-primary dark:text-chalk"
+                                value={quest.category}
+                                onChange={(e) => handleQuestSetChange(qIndex, 'category', e.target.value)}
+                             />
+                        </div>
+                        <div>
+                             <label className="block text-xs uppercase font-bold text-ash/60 dark:text-chalk/40 mb-1">Level</label>
+                             <select 
+                                className="w-full px-3 py-2 bg-white dark:bg-white/5 border border-chalk dark:border-white/10 rounded-lg text-sm focus:ring-1 focus:ring-primary dark:focus:ring-accent text-primary dark:text-chalk"
+                                value={quest.level}
+                                onChange={(e) => handleQuestSetChange(qIndex, 'level', e.target.value)}
+                             >
+                                <option value="Beginner">Beginner</option>
+                                <option value="Intermediate">Intermediate</option>
+                                <option value="Advanced">Advanced</option>
+                                <option value="Expert">Expert</option>
+                             </select>
+                        </div>
+                        <div>
+                             <label className="block text-xs uppercase font-bold text-ash/60 dark:text-chalk/40 mb-1">Tutor Name</label>
+                             <input 
+                                type="text" 
+                                className="w-full px-3 py-2 bg-white dark:bg-white/5 border border-chalk dark:border-white/10 rounded-lg text-sm focus:ring-1 focus:ring-primary dark:focus:ring-accent text-primary dark:text-chalk"
+                                value={quest.tutor?.name || ''}
+                                onChange={(e) => handleQuestTutorChange(qIndex, 'name', e.target.value)}
+                             />
+                        </div>
+                        <div>
+                             <label className="block text-xs uppercase font-bold text-ash/60 dark:text-chalk/40 mb-1">Tutor Avatar URL</label>
+                             <input 
+                                type="text" 
+                                className="w-full px-3 py-2 bg-white dark:bg-white/5 border border-chalk dark:border-white/10 rounded-lg text-sm focus:ring-1 focus:ring-primary dark:focus:ring-accent text-primary dark:text-chalk"
+                                value={quest.tutor?.avatarUrl || ''}
+                                onChange={(e) => handleQuestTutorChange(qIndex, 'avatarUrl', e.target.value)}
+                             />
+                        </div>
+                    </div>
+
+                    {/* Quest Tasks Sub-section */}
+                    <div className="bg-white/50 dark:bg-white/5 rounded-lg p-4 border border-chalk dark:border-white/5">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-sm font-bold text-primary dark:text-chalk uppercase">Session Tasks</h3>
+                            <button 
+                                onClick={() => addQuestTask(qIndex)}
+                                className="text-xs px-2 py-1 bg-primary/10 text-primary rounded hover:bg-primary hover:text-white transition-colors flex items-center gap-1"
+                            >
+                                <span className="material-icons-outlined text-xs">add</span> Add Task
+                            </button>
+                        </div>
+                        
+                        <div className="space-y-3">
+                            {quest.tasks.map((task, tIndex) => (
+                                <div key={task.id || tIndex} className="flex gap-3 items-start p-3 bg-white dark:bg-black/20 rounded-lg border border-chalk dark:border-white/5">
+                                    <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold mt-1">
+                                        {tIndex + 1}
+                                    </div>
+                                    <div className="flex-1 grid gap-2">
+                                        <input 
+                                            type="text" 
+                                            className="w-full px-2 py-1.5 bg-transparent border-b border-ash/20 focus:border-primary outline-none text-sm text-primary dark:text-chalk"
+                                            value={task.description}
+                                            onChange={(e) => handleQuestTaskChange(qIndex, tIndex, 'description', e.target.value)}
+                                            placeholder="Task Description"
+                                        />
+                                        <div className="flex gap-2">
+                                            <select 
+                                                className="px-2 py-1 bg-ash/5 rounded text-xs text-ash dark:text-chalk/60 border-none outline-none"
+                                                value={task.proofType}
+                                                onChange={(e) => handleQuestTaskChange(qIndex, tIndex, 'proofType', e.target.value)}
+                                            >
+                                                <option value="text">Text Proof</option>
+                                                <option value="link">Link Proof</option>
+                                                <option value="image">Image Proof</option>
+                                                <option value="yes_no">Yes/No</option>
+                                                <option value="username">Username</option>
+                                            </select>
+                                            <input 
+                                                type="text" 
+                                                className="flex-1 px-2 py-1 bg-ash/5 rounded text-xs text-primary dark:text-chalk outline-none"
+                                                value={task.link || ''}
+                                                onChange={(e) => handleQuestTaskChange(qIndex, tIndex, 'link', e.target.value)}
+                                                placeholder="Optional Link URL"
+                                            />
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => removeQuestTask(qIndex, tIndex)}
+                                        className="text-ash/40 hover:text-red-500 transition-colors"
+                                    >
+                                        <span className="material-icons-outlined text-sm">close</span>
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            ))}
         </div>
       </div>
 

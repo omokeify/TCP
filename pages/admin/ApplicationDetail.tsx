@@ -13,6 +13,9 @@ export const ApplicationDetail: React.FC = () => {
   const [processing, setProcessing] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [adminNote, setAdminNote] = useState('');
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [showEmailForm, setShowEmailForm] = useState(false);
 
   useEffect(() => {
     if (!MockService.isAdminAuthenticated()) {
@@ -54,6 +57,26 @@ export const ApplicationDetail: React.FC = () => {
       } finally {
           setProcessing(false);
       }
+  };
+
+  const handleSendEmail = async () => {
+    if (!app || !emailSubject || !emailBody) return;
+    setProcessing(true);
+    try {
+        const res = await MockService.sendEmail(app.email, emailSubject, emailBody.replace(/\n/g, '<br>'));
+        if (res.success) {
+            alert("Email sent successfully!");
+            setShowEmailForm(false);
+            setEmailSubject('');
+            setEmailBody('');
+        } else {
+            alert("Failed to send email: " + res.message);
+        }
+    } catch (e) {
+        alert("Error sending email");
+    } finally {
+        setProcessing(false);
+    }
   };
 
   const handleAction = async (status: ApplicationStatus) => {
@@ -103,7 +126,7 @@ export const ApplicationDetail: React.FC = () => {
       </header>
 
       {/* Main Liquid Card */}
-      <div className="relative overflow-hidden rounded-3xl p-8 md:p-12 bg-white dark:bg-white/5 border border-primary/5 dark:border-white/10 shadow-2xl backdrop-blur-2xl">
+      <div className="relative rounded-3xl p-8 md:p-12 bg-white dark:bg-white/5 border border-primary/5 dark:border-white/10 shadow-2xl backdrop-blur-2xl">
         
         {/* Info Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-12">
@@ -177,7 +200,7 @@ export const ApplicationDetail: React.FC = () => {
                 <div>
                      <label className="text-xs font-bold uppercase tracking-widest text-primary/60 dark:text-accent/60 block mb-3">Submitted Assets & Links</label>
                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {classConfig?.tasks.filter(t => t.requiresProof).map(task => {
+                        {(classConfig?.tasks || []).filter(t => t.requiresProof).map(task => {
                              const proof = app.taskProofs?.[task.id];
                              if (!proof) return null;
 
@@ -242,6 +265,64 @@ export const ApplicationDetail: React.FC = () => {
                     Save Note
                 </button>
             </div>
+        </div>
+
+        {/* Email User Section */}
+        <div className="space-y-4 border-t border-primary/5 dark:border-white/10 pt-12">
+             <div className="flex items-center gap-3 mb-6">
+                <div className="w-8 h-8 rounded bg-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-300">
+                    <span className="material-icons-outlined text-sm">email</span>
+                </div>
+                <h2 className="text-2xl font-bold text-primary dark:text-chalk">Send Email</h2>
+            </div>
+            
+            {!showEmailForm ? (
+                <button 
+                    onClick={() => setShowEmailForm(true)}
+                    className="px-6 py-3 bg-chalk dark:bg-white/5 border border-primary/10 dark:border-white/10 text-primary dark:text-chalk rounded-xl font-bold hover:bg-chalk/50 dark:hover:bg-white/10 transition-colors flex items-center gap-2"
+                >
+                    <span className="material-icons-outlined text-sm">edit</span>
+                    Compose Message
+                </button>
+            ) : (
+                <div className="bg-chalk/30 dark:bg-white/5 rounded-2xl p-6 border border-primary/5 dark:border-white/10 space-y-4">
+                    <div>
+                        <label className="text-xs font-bold uppercase tracking-widest text-primary/60 dark:text-accent/60 block mb-2">Subject</label>
+                        <input 
+                            type="text"
+                            value={emailSubject}
+                            onChange={(e) => setEmailSubject(e.target.value)}
+                            className="w-full bg-white dark:bg-black/20 border border-primary/10 dark:border-white/10 rounded-lg p-3 text-primary dark:text-chalk focus:outline-none focus:border-accent"
+                            placeholder="e.g. Important Update Regarding Class"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold uppercase tracking-widest text-primary/60 dark:text-accent/60 block mb-2">Message</label>
+                        <textarea 
+                            value={emailBody}
+                            onChange={(e) => setEmailBody(e.target.value)}
+                            className="w-full bg-white dark:bg-black/20 border border-primary/10 dark:border-white/10 rounded-lg p-3 min-h-[150px] text-primary dark:text-chalk focus:outline-none focus:border-accent"
+                            placeholder="Type your message here..."
+                        />
+                    </div>
+                    <div className="flex justify-end gap-3">
+                        <button 
+                            onClick={() => setShowEmailForm(false)}
+                            className="px-4 py-2 text-ash dark:text-chalk/60 font-bold hover:text-primary dark:hover:text-chalk transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            onClick={handleSendEmail}
+                            disabled={processing || !emailSubject || !emailBody}
+                            className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                        >
+                            <span className="material-icons-outlined text-sm">send</span>
+                            Send Email
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
 
         {/* Action Footer */}

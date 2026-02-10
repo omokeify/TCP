@@ -80,8 +80,7 @@ export const ClassPortal: React.FC = () => {
   const generateReferralLink = () => {
     if (!userCode) return '';
     // Construct absolute URL
-    const baseUrl = window.location.href.split('#')[0];
-    return `${baseUrl}#/apply?ref=${userCode}`;
+    return `${window.location.origin}/?ref=${userCode}`;
   };
 
   const copyReferralLink = () => {
@@ -189,6 +188,12 @@ export const ClassPortal: React.FC = () => {
 
   const isLink = (str?: string) => str?.startsWith('http') || str?.startsWith('www');
   
+  // Progress Calculation
+  const totalTasks = classConfig.tasks?.length || 0;
+  const completedTasks = application?.taskProofs ? Object.keys(application.taskProofs).length : 0;
+  const pendingTasks = Math.max(0, totalTasks - completedTasks);
+  const progressPercent = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
   // Use sessions if available, otherwise fallback to legacy single session
   const sessions = classConfig.sessions && classConfig.sessions.length > 0 ? classConfig.sessions : [
       {
@@ -373,6 +378,36 @@ export const ClassPortal: React.FC = () => {
 
                 {/* Right Column: Instructor & Notes */}
                 <div className="lg:col-span-5 flex flex-col gap-6">
+                    {/* Quests Card */}
+                    <div className="glass-card p-8 bg-[var(--accent)]/20 border-[var(--accent)]/30 relative overflow-hidden group hover:scale-[1.02] transition-transform cursor-pointer" onClick={() => navigate('/quests')}>
+                         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                             <span className="material-icons-outlined text-8xl text-[var(--primary)]">assignment_turned_in</span>
+                         </div>
+                         <div className="relative z-10">
+                             <div className="flex items-center justify-between mb-4">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--primary)] bg-white/50 px-3 py-1 rounded-full backdrop-blur-sm">New Quests Available</span>
+                                <span className="material-icons-outlined text-[var(--primary)] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                             </div>
+                             <h3 className="text-2xl font-extrabold text-[var(--primary)] mb-2">Quest Board ⚔️</h3>
+                             <p className="text-sm font-medium text-[var(--primary)] opacity-80 mb-6 max-w-[80%]">
+                                 Complete tasks to unlock perks and prove your mastery.
+                             </p>
+                             
+                             {/* Mini Progress */}
+                             <div className="flex items-center gap-3">
+                                 <div className="flex-1 h-2 bg-white/40 rounded-full overflow-hidden">
+                                     <div 
+                                        className="h-full bg-[var(--primary)] rounded-full transition-all duration-1000 ease-out"
+                                        style={{ width: `${progressPercent}%` }}
+                                     ></div>
+                                 </div>
+                                 <span className="text-xs font-bold text-[var(--primary)]">
+                                     {pendingTasks === 0 ? 'All Done!' : `${pendingTasks} Pending`}
+                                 </span>
+                             </div>
+                         </div>
+                    </div>
+
                     {/* Admin Note Card */}
                     {application?.adminNote && (
                         <div className="glass-card p-8 bg-[var(--accent)]/10 border-[var(--accent)]/20 relative overflow-hidden">

@@ -1,22 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { GlassCard } from '../components/GlassCard';
 import { Button } from '../components/Button';
-import { DEFAULT_CLASS_INFO, ClassConfig, TaskConfig } from '../types';
+import { DEFAULT_CLASS_INFO, ClassConfig } from '../types';
 import { MockService } from '../services/mockDb';
 
 export const Apply: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [classInfo, setClassInfo] = useState<ClassConfig>(DEFAULT_CLASS_INFO);
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    twitterHandle: '', 
-    whyJoin: ''
-  });
-  const [taskProofs, setTaskProofs] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -30,255 +21,54 @@ export const Apply: React.FC = () => {
     fetchConfig();
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-  };
-
-  const handleProofChange = (taskId: string, value: string) => {
-    setTaskProofs(prev => ({ ...prev, [taskId]: value }));
-  };
-
-  const handleFileChange = (taskId: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5000000) { // 5MB limit
-         alert("File is too large. Please upload an image under 5MB.");
-         return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-         // This is a Data URL (base64)
-         handleProofChange(taskId, reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
-    // Get referral ID from URL
-    const referrerId = searchParams.get('ref') || undefined;
-
-    try {
-      await MockService.submitApplication({
-        ...formData,
-        taskProofs,
-        referrerId
-      });
-      navigate('/status');
-    } catch (error) {
-      console.error("Submission failed", error);
-      alert("Something went wrong. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // If applications are closed (or default false), show the "Closed" view
-  if (!classInfo.acceptingApplications) {
-    return (
-        <div className="flex flex-col items-center justify-center text-center max-w-3xl mx-auto space-y-8 py-10 px-4">
-             <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold text-[#3B472F] leading-tight">
-                {classInfo.title}
-             </h1>
-             <p className="text-lg md:text-xl text-[#686868] max-w-2xl leading-relaxed whitespace-pre-wrap">
-                {classInfo.description}
-             </p>
-             
-             <div className="mt-8 p-6 bg-[#3B472F]/5 rounded-2xl border border-[#3B472F]/10 w-full md:w-auto">
-                 <p className="text-[#3B472F] font-semibold text-lg">Applications are currently closed.</p>
-                 <p className="text-[#686868] mt-2 text-sm">Please check back later or wait for the next cohort to open.</p>
-             </div>
-        </div>
-    );
-  }
+  // If applications are closed, we might still want to show the landing page 
+  // but maybe hide the "Browse Quests" if the whole program is paused.
+  // For now, we'll assume the landing page is always visible.
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 w-full">
-      {/* Info Column */}
-      <div className="space-y-6 flex flex-col justify-center order-1 lg:order-none">
-        <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-[#3B472F] leading-tight">
-          {classInfo.title}
+    <div className="flex flex-col items-center justify-center min-h-[80vh] w-full max-w-4xl mx-auto px-4 py-12">
+      {/* Hero Section */}
+      <div className="text-center space-y-6 mb-16">
+        <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-[#3B472F] leading-tight">
+          The Community Platform
         </h1>
-        <p className="text-base md:text-lg text-[#686868] max-w-md leading-relaxed whitespace-pre-wrap">
-          {classInfo.description}
+        <p className="text-lg md:text-xl text-[#686868] max-w-2xl mx-auto leading-relaxed">
+          A dedicated space for builders, creators, and learners to collaborate and grow together. Complete quests, earn access to exclusive sessions, and join a vibrant network of peers.
         </p>
 
-        <div className="bg-[#FFFA7E]/50 backdrop-blur-sm p-6 rounded-2xl border border-[#FFFA7E]">
-          <h3 className="font-bold text-[#3B472F] mb-3 uppercase tracking-wider text-sm">Required Tasks</h3>
-          <ul className="space-y-3">
-            {classInfo.tasks.map((task, i) => (
-              <li key={i} className="flex items-start gap-3 text-[#3B472F]">
-                <span className="bg-[#3B472F] text-[#FFFA7E] w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold mt-1 shrink-0">{i + 1}</span>
-                <div className="flex flex-col">
-                  {task.link ? (
-                    <a href={task.link} target="_blank" rel="noreferrer" className="text-sm font-medium hover:underline flex items-center gap-1 group">
-                      {task.description}
-                      <span className="material-icons-outlined text-xs opacity-50 group-hover:opacity-100 transition-opacity">open_in_new</span>
-                    </a>
-                  ) : (
-                    <span className="text-sm font-medium">{task.description}</span>
-                  )}
-                  {task.requiresProof && (
-                    <span className="text-xs text-[#686868]/80 mt-1">
-                      (Proof required: {task.proofType === 'image' ? 'Image Upload' : task.proofType === 'yes_no' ? 'Yes/No Selection' : task.proofType})
-                    </span>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+            <Button onClick={() => {
+                const ref = searchParams.get('ref');
+                navigate(ref ? `/quests?ref=${ref}` : '/quests');
+            }} className="flex items-center justify-center gap-2 px-8 py-4 text-lg">
+                <span className="material-icons-outlined">explore</span>
+                Start Your Journey
+            </Button>
         </div>
       </div>
 
-      {/* Form Column */}
-      <div className="order-2 lg:order-none">
-        <GlassCard className="w-full">
-            <h2 className="text-2xl font-bold text-[#3B472F] mb-6">Apply for Access</h2>
-            <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-                <label className="block text-sm font-bold text-[#3B472F] mb-1">
-                    {classInfo.nameLabel || "Full Name"}
-                </label>
-                <input 
-                required
-                name="fullName"
-                type="text" 
-                className="w-full px-4 py-3 rounded-xl bg-white/50 border border-transparent focus:border-[#3B472F] focus:bg-white focus:ring-0 transition-all outline-none text-[#3B472F]"
-                placeholder="Jane Doe"
-                value={formData.fullName}
-                onChange={handleChange}
-                />
+      {/* How It Works Section */}
+      <div className="w-full">
+        <h3 className="font-bold text-[#3B472F] mb-8 text-center uppercase tracking-wider text-sm">How It Works</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-[#FFFA7E]/50 backdrop-blur-sm p-6 rounded-2xl border border-[#FFFA7E] flex flex-col items-center text-center">
+                <span className="bg-[#3B472F] text-[#FFFA7E] w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold mb-4">1</span>
+                <span className="font-bold block text-lg text-[#3B472F] mb-2">Choose a Quest</span>
+                <span className="text-[#3B472F]/80">Explore available quest sets and find one that matches your interests.</span>
             </div>
-
-            <div>
-                <label className="block text-sm font-bold text-[#3B472F] mb-1">
-                    {classInfo.emailLabel || "Email Address"}
-                </label>
-                <input 
-                required
-                name="email"
-                type="email" 
-                className="w-full px-4 py-3 rounded-xl bg-white/50 border border-transparent focus:border-[#3B472F] focus:bg-white focus:ring-0 transition-all outline-none text-[#3B472F]"
-                placeholder="jane@example.com"
-                value={formData.email}
-                onChange={handleChange}
-                />
-            </div>
-
-            <div>
-                <label className="block text-sm font-bold text-[#3B472F] mb-1">
-                    {classInfo.whyJoinLabel || "Why do you want to join?"}
-                </label>
-                <textarea 
-                required
-                name="whyJoin"
-                rows={4}
-                className="w-full px-4 py-3 rounded-xl bg-white/50 border border-transparent focus:border-[#3B472F] focus:bg-white focus:ring-0 transition-all outline-none text-[#3B472F] resize-none"
-                placeholder="Tell us about your goals..."
-                value={formData.whyJoin}
-                onChange={handleChange}
-                />
-            </div>
-
-            <hr className="border-[#3B472F]/10 my-4" />
-            <h3 className="text-sm font-bold text-[#3B472F] uppercase tracking-wide">Task Proofs</h3>
-
-            {classInfo.tasks.map((task) => {
-                if (!task.requiresProof) return null;
-                const proof = taskProofs[task.id] || '';
-
-                return (
-                <div key={task.id}>
-                    <div className="mb-1">
-                        <label className="block text-sm font-bold text-[#3B472F]">
-                            {task.proofLabel || task.description}
-                        </label>
-                        {task.link && (
-                            <a 
-                                href={task.link} 
-                                target="_blank" 
-                                rel="noreferrer" 
-                                className="text-xs text-[#3B472F] opacity-80 hover:opacity-100 hover:underline flex items-center gap-1 mt-0.5 w-fit"
-                            >
-                                <span className="material-icons-outlined text-[14px]">link</span>
-                                Open Link for Task
-                            </a>
-                        )}
-                    </div>
-                    
-                    {task.proofType === 'image' ? (
-                        <div className="space-y-2">
-                        <input 
-                            required={!proof}
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => handleFileChange(task.id, e)}
-                            className="w-full block text-sm text-[#686868] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#3B472F] file:text-white hover:file:bg-[#2A3322] cursor-pointer"
-                        />
-                        {proof && (
-                            <div className="relative inline-block mt-2">
-                            <img src={proof} alt="Preview" className="h-20 w-auto rounded-lg border border-[#3B472F]/20" />
-                            <button 
-                                type="button" 
-                                onClick={() => handleProofChange(task.id, '')}
-                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-sm hover:bg-red-600 transition-colors"
-                            >
-                                <span className="material-icons-outlined text-xs block">close</span>
-                            </button>
-                            </div>
-                        )}
-                        </div>
-                    ) : task.proofType === 'yes_no' ? (
-                        <div className="flex gap-4">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input 
-                                    type="radio"
-                                    name={`proof-${task.id}`}
-                                    value="yes"
-                                    checked={proof === 'yes'}
-                                    onChange={(e) => handleProofChange(task.id, e.target.value)}
-                                    className="w-4 h-4 text-[#3B472F] focus:ring-[#3B472F] border-gray-300"
-                                />
-                                <span className="text-sm font-medium text-[#3B472F]">Yes</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input 
-                                    type="radio"
-                                    name={`proof-${task.id}`}
-                                    value="no"
-                                    checked={proof === 'no'}
-                                    onChange={(e) => handleProofChange(task.id, e.target.value)}
-                                    className="w-4 h-4 text-[#3B472F] focus:ring-[#3B472F] border-gray-300"
-                                />
-                                <span className="text-sm font-medium text-[#3B472F]">No</span>
-                            </label>
-                        </div>
-                    ) : (
-                        <input 
-                            required
-                            type={task.proofType === 'link' ? 'url' : 'text'} 
-                            className="w-full px-4 py-3 rounded-xl bg-white/50 border border-transparent focus:border-[#3B472F] focus:bg-white focus:ring-0 transition-all outline-none text-[#3B472F]"
-                            placeholder={task.proofType === 'link' ? 'https://...' : task.proofType === 'username' ? '@username' : 'Answer here'}
-                            value={proof}
-                            onChange={(e) => handleProofChange(task.id, e.target.value)}
-                        />
-                    )}
-                </div>
-                );
-            })}
-
-            <Button type="submit" isLoading={isSubmitting} className="w-full mt-4">
-                Submit Application
-            </Button>
             
-            <p className="text-xs text-center text-[#686868] mt-4">
-                By submitting, you agree to our terms. Manual approval required.
-            </p>
-            </form>
-        </GlassCard>
+            <div className="bg-[#FFFA7E]/50 backdrop-blur-sm p-6 rounded-2xl border border-[#FFFA7E] flex flex-col items-center text-center">
+                <span className="bg-[#3B472F] text-[#FFFA7E] w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold mb-4">2</span>
+                <span className="font-bold block text-lg text-[#3B472F] mb-2">Submit Proofs</span>
+                <span className="text-[#3B472F]/80">Complete tasks and submit your work to demonstrate your skills.</span>
+            </div>
+            
+            <div className="bg-[#FFFA7E]/50 backdrop-blur-sm p-6 rounded-2xl border border-[#FFFA7E] flex flex-col items-center text-center">
+                <span className="bg-[#3B472F] text-[#FFFA7E] w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold mb-4">3</span>
+                <span className="font-bold block text-lg text-[#3B472F] mb-2">Get Access</span>
+                <span className="text-[#3B472F]/80">Receive an invite code to join exclusive sessions and the community portal.</span>
+            </div>
+        </div>
       </div>
     </div>
   );

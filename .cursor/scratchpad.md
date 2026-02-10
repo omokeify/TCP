@@ -24,6 +24,10 @@ The user requested "HIGH-IMPACT, LOW-COMPLEXITY" features:
 - [x] `ApplicationDetail.tsx` has Admin Note input.
 - [x] `ClassPortal.tsx` has Countdown, Test Access, and Note display.
 - [x] `DEPLOY.md` updated.
+- [x] Landing Page refactored (Apply form removed).
+- [x] Root path `/` now serves Landing Page; `/apply` removed.
+- [x] Quest System implemented (`QuestBoard`, `QuestDetail`).
+- [x] Admin "Open Applications" toggle now controls Quest access.
 - [x] Code committed (Pending push).
 
 ## Executor's Feedback or Assistance Requests

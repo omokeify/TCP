@@ -10,7 +10,7 @@ const APPS_KEY = 'blink_applications';
 const CODES_KEY = 'blink_codes';
 const AUTH_KEY = 'blink_admin_auth';
 // Updated key version to force refresh of config on devices with old cached state
-const CONFIG_KEY = 'blink_class_config_v2';
+const CONFIG_KEY = 'blink_class_config_v4';
 const DB_URL_KEY = 'blink_db_url';
 
 // Helper to simulate delay
@@ -75,14 +75,20 @@ export const MockService = {
 
   getClassConfig: async (): Promise<ClassConfig> => {
     const dbUrl = MockService.getDbUrl();
+    let remoteData = null;
+
     if (dbUrl) {
        try {
-         const data = await MockService.callScript('get_config', 'GET');
-         if (data && data.title) return data;
-         return DEFAULT_CLASS_INFO;
-       } catch (e) { console.error(e); return DEFAULT_CLASS_INFO; }
+         remoteData = await MockService.callScript('get_config', 'GET');
+       } catch (e) { 
+         console.warn("Failed to fetch remote config, falling back to local:", e); 
+         // Fallback will happen below
+       }
     }
 
+    if (remoteData && remoteData.title) return remoteData;
+
+    // Local fallback
     await delay(300);
     const stored = localStorage.getItem(CONFIG_KEY);
     return stored ? JSON.parse(stored) : DEFAULT_CLASS_INFO;
@@ -184,6 +190,32 @@ export const MockService = {
     
     localStorage.setItem(APPS_KEY, JSON.stringify(updatedApps));
     return { success: true, count };
+  },
+
+  sendEmail: async (recipient: string, subject: string, body: string): Promise<{ success: boolean; message?: string }> => {
+    const dbUrl = MockService.getDbUrl();
+    if (dbUrl) {
+       const res = await MockService.callScript('send_email', 'POST', { recipient, subject, body });
+       return res;
+    }
+    
+    // Local simulation
+    await delay(800);
+    console.log(`[MOCK EMAIL] To: ${recipient}\nSubject: ${subject}\nBody: ${body}`);
+    return { success: true };
+  },
+
+  batchSendEmail: async (recipients: string[], subject: string, body: string): Promise<{ success: boolean; sent: number; errors?: string[] }> => {
+    const dbUrl = MockService.getDbUrl();
+    if (dbUrl) {
+       const res = await MockService.callScript('batch_send_email', 'POST', { recipients, subject, body });
+       return res;
+    }
+
+    // Local simulation
+    await delay(1500);
+    console.log(`[MOCK BATCH EMAIL] To ${recipients.length} recipients\nSubject: ${subject}\nBody: ${body}`);
+    return { success: true, sent: recipients.length };
   },
 
   // --- Codes ---

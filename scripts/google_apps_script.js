@@ -93,6 +93,12 @@ function handleRequest(e) {
       case 'batch_approve':
         result = batchApprove(data.ids);
         break;
+      case 'send_email':
+        result = sendCustomEmail(data.recipient, data.subject, data.body);
+        break;
+      case 'batch_send_email':
+        result = batchSendEmail(data.recipients, data.subject, data.body);
+        break;
       default:
         result = { error: "Unknown action: " + action };
     }
@@ -471,6 +477,59 @@ function parseSessionEnd(dateStr, timeStr) {
 
 function triggerReminders() {
   return { sent: 0, message: "Not implemented in this version" };
+}
+
+function sendCustomEmail(recipient, subject, body) {
+  if (!recipient || !subject || !body) {
+    return { success: false, message: "Missing required fields" };
+  }
+  
+  try {
+    MailApp.sendEmail({
+      to: recipient,
+      subject: subject,
+      htmlBody: body
+    });
+    return { success: true };
+  } catch (e) {
+    return { success: false, message: "Failed to send email: " + e.toString() };
+  }
+}
+
+function batchSendEmail(recipients, subject, body) {
+  if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
+    return { success: false, message: "No recipients provided" };
+  }
+  if (!subject || !body) {
+    return { success: false, message: "Missing subject or body" };
+  }
+
+  let sentCount = 0;
+  let errors = [];
+
+  // Google Apps Script Quota: 100 emails/day for free, 1500 for workspace.
+  // We'll iterate and send.
+  
+  for (let i = 0; i < recipients.length; i++) {
+    const email = recipients[i];
+    try {
+      MailApp.sendEmail({
+        to: email,
+        subject: subject,
+        htmlBody: body
+      });
+      sentCount++;
+    } catch (e) {
+      errors.push(`Failed to send to ${email}: ${e.toString()}`);
+    }
+  }
+  
+  return { 
+    success: sentCount > 0, 
+    sent: sentCount, 
+    total: recipients.length,
+    errors: errors 
+  };
 }
 
 // --- EMAIL HELPER ---
