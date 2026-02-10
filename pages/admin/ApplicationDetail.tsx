@@ -200,40 +200,47 @@ export const ApplicationDetail: React.FC = () => {
                 <div>
                      <label className="text-xs font-bold uppercase tracking-widest text-primary/60 dark:text-accent/60 block mb-3">Submitted Assets & Links</label>
                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {(classConfig?.tasks || []).filter(t => t.requiresProof).map(task => {
-                             const proof = app.taskProofs?.[task.id];
-                             if (!proof) return null;
+                        {(() => {
+                            // Combine all potential tasks from global config and all quest sets to ensure we show proofs for any task the user might have completed
+                            const allTasks = [...(classConfig?.tasks || [])];
+                            classConfig?.questSets?.forEach(qs => {
+                                allTasks.push(...qs.tasks);
+                            });
+                            // Deduplicate by ID
+                            const uniqueTasks = Array.from(new Map(allTasks.map(t => [t.id, t])).values());
 
-                             const isImage = task.proofType === 'image' || proof.startsWith('data:image');
-                             const isLink = task.proofType === 'link' || proof.startsWith('http');
+                            return uniqueTasks.filter(t => t.requiresProof).map(task => {
+                                 const proof = app.taskProofs?.[task.id];
+                                 if (!proof) return null;
 
-                             return (
-                                <a 
-                                    key={task.id}
-                                    href={isLink ? proof : '#'}
-                                    target={isLink ? "_blank" : undefined}
-                                    rel="noreferrer"
-                                    onClick={(e) => { if(!isLink && !isImage) e.preventDefault(); }}
-                                    className="flex items-center gap-4 p-4 rounded-xl bg-chalk/30 dark:bg-white/5 border border-primary/5 dark:border-white/10 hover:bg-chalk/50 dark:hover:bg-white/10 transition-all group"
-                                >
-                                    <div className="w-12 h-12 rounded-lg bg-primary/10 dark:bg-primary flex items-center justify-center text-primary dark:text-accent shrink-0">
-                                        <span className="material-icons-outlined">{isImage ? 'image' : isLink ? 'link' : 'text_fields'}</span>
-                                    </div>
-                                    <div className="overflow-hidden">
-                                        <p className="font-bold text-sm text-primary dark:text-chalk truncate">{task.proofLabel || task.description}</p>
-                                        <p className="text-xs text-ash/60 dark:text-chalk/40 truncate">
-                                            {isImage ? 'Image Asset' : isLink ? proof : proof}
-                                        </p>
-                                        {isImage && (
-                                            <div className="mt-2 h-20 rounded bg-white dark:bg-black/20 overflow-hidden relative border border-primary/5">
-                                                <img src={proof} alt="proof" className="w-full h-full object-cover" />
+                                 const isImage = task.proofType === 'image' || proof.startsWith('data:image');
+                                 const isLink = task.proofType === 'link' || proof.startsWith('http');
+
+                                 return (
+                                    <a 
+                                        key={task.id}
+                                        href={isLink ? proof : '#'}
+                                        target={isLink ? "_blank" : undefined}
+                                        rel="noreferrer"
+                                        onClick={(e) => { if(!isLink && !isImage) e.preventDefault(); }}
+                                        className="flex items-center gap-4 p-4 rounded-xl bg-chalk/30 dark:bg-white/5 border border-primary/5 dark:border-white/10 hover:bg-chalk/50 dark:hover:bg-white/10 transition-all group"
+                                    >
+                                        <div className="w-12 h-12 rounded-lg bg-primary/10 dark:bg-primary flex items-center justify-center text-primary dark:text-accent shrink-0">
+                                            <span className="material-icons-outlined">{isImage ? 'image' : isLink ? 'link' : 'text_fields'}</span>
+                                        </div>
+                                        <div className="overflow-hidden">
+                                            <div className="text-xs font-bold uppercase tracking-wider text-primary/60 dark:text-chalk/60 mb-0.5">
+                                                {task.proofLabel || task.description}
                                             </div>
-                                        )}
-                                    </div>
-                                    {isLink && <span className="material-icons-outlined ml-auto opacity-0 group-hover:opacity-100 transition-opacity text-primary dark:text-chalk">open_in_new</span>}
-                                </a>
-                             );
-                        })}
+                                            <div className="text-sm font-bold text-primary dark:text-chalk truncate">
+                                                {isImage ? 'View Image' : isLink ? proof : proof}
+                                            </div>
+                                        </div>
+                                        {isLink && <span className="material-icons-outlined text-ash/40 group-hover:text-primary dark:group-hover:text-accent ml-auto">open_in_new</span>}
+                                    </a>
+                                 );
+                            });
+                        })()}
                      </div>
                 </div>
             </div>

@@ -10,11 +10,60 @@ const APPS_KEY = 'blink_applications';
 const CODES_KEY = 'blink_codes';
 const AUTH_KEY = 'blink_admin_auth';
 // Updated key version to force refresh of config on devices with old cached state
-const CONFIG_KEY = 'blink_class_config_v4';
+const CONFIG_KEY = 'blink_class_config_v11';
 const DB_URL_KEY = 'blink_db_url';
 
 // Helper to simulate delay
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// --- Caching System ---
+class SimpleCache<T> {
+    private cache: Record<string, { data: T; expires: number }> = {};
+    private storageKeyPrefix = 'blink_cache_';
+
+    constructor(private ttl: number = 5 * 60 * 1000) {} // Default 5 mins
+
+    get(key: string): T | null {
+        // Check Memory Cache
+        const memEntry = this.cache[key];
+        if (memEntry && memEntry.expires > Date.now()) {
+            return memEntry.data;
+        }
+
+        // Check LocalStorage
+        const stored = localStorage.getItem(this.storageKeyPrefix + key);
+        if (stored) {
+            try {
+                const parsed = JSON.parse(stored);
+                if (parsed.expires > Date.now()) {
+                    // Rehydrate memory cache
+                    this.cache[key] = parsed;
+                    return parsed.data;
+                }
+            } catch (e) {
+                console.warn('Cache parse error', e);
+            }
+        }
+        return null;
+    }
+
+    set(key: string, data: T) {
+        const entry = {
+            data,
+            expires: Date.now() + this.ttl
+        };
+        this.cache[key] = entry;
+        localStorage.setItem(this.storageKeyPrefix + key, JSON.stringify(entry));
+    }
+
+    clear(key: string) {
+        delete this.cache[key];
+        localStorage.removeItem(this.storageKeyPrefix + key);
+    }
+}
+
+const configCache = new SimpleCache<ClassConfig>(10 * 60 * 1000); // 10 mins for config
+const appCache = new SimpleCache<Application[]>(2 * 60 * 1000); // 2 mins for apps
 
 export const MockService = {
   // --- Database Configuration ---
@@ -73,7 +122,13 @@ export const MockService = {
 
   // --- Config ---
 
-  getClassConfig: async (): Promise<ClassConfig> => {
+  getClassConfig: async (forceRefresh = false): Promise<ClassConfig> => {
+    // Check Cache first
+    if (!forceRefresh) {
+        const cached = configCache.get('config');
+        if (cached) return cached;
+    }
+
     const dbUrl = MockService.getDbUrl();
     let remoteData = null;
 
@@ -86,7 +141,10 @@ export const MockService = {
        }
     }
 
-    if (remoteData && remoteData.title) return remoteData;
+    if (remoteData && remoteData.title) {
+        configCache.set('config', remoteData);
+        return remoteData;
+    }
 
     // Local fallback
     await delay(300);
@@ -96,21 +154,32 @@ export const MockService = {
 
   updateClassConfig: async (config: ClassConfig): Promise<void> => {
     const dbUrl = MockService.getDbUrl();
+    
+    // Optimistic Update
+    configCache.set('config', config);
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+
     if (dbUrl) {
         await MockService.callScript('update_config', 'POST', config);
         return;
     }
 
     await delay(500);
-    localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
   },
 
   // --- Applications ---
   
-  getApplications: async (): Promise<Application[]> => {
+  getApplications: async (forceRefresh = false): Promise<Application[]> => {
+    if (!forceRefresh) {
+        const cached = appCache.get('all_apps');
+        if (cached) return cached;
+    }
+
     const dbUrl = MockService.getDbUrl();
     if (dbUrl) {
-       return await MockService.callScript('get_applications', 'GET');
+       const data = await MockService.callScript('get_applications', 'GET');
+       appCache.set('all_apps', data);
+       return data;
     }
 
     await delay(500);

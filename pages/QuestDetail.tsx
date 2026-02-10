@@ -66,6 +66,22 @@ export const QuestDetail: React.FC = () => {
     }
   };
 
+    // Combine Global Tasks and Quest Tasks (Deduplicated)
+    const combinedTasks = React.useMemo(() => {
+        if (!classConfig || !questSet) return [];
+        
+        const allTasks = [...(classConfig.tasks || []), ...(questSet.tasks || [])];
+        const uniqueTasks = new Map();
+
+        allTasks.forEach(task => {
+            // Exclude t2 (Why Join) as it is hardcoded in form
+            if (task.id === 't2' || !task.requiresProof) return; 
+            uniqueTasks.set(task.id, task);
+        });
+
+        return Array.from(uniqueTasks.values());
+    }, [classConfig, questSet]);
+
   const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       
@@ -295,7 +311,7 @@ export const QuestDetail: React.FC = () => {
                             </div>
                         </div>
 
-                        {questSet.tasks.map((task) => (
+                        {combinedTasks.map((task) => (
                             <div key={task.id}>
                                 <div className="mb-2">
                                     <label className="block text-sm font-bold text-[var(--primary)]">
