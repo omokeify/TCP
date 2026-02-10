@@ -75,6 +75,14 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 Manage Applications
             </Link>
             <Link 
+                to="/admin/proofs" 
+                onClick={() => setIsSidebarOpen(false)}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname.includes('proofs') ? 'bg-accent text-primary' : 'hover:bg-white/10 text-white'}`}
+            >
+                <span className="material-icons-outlined">fact_check</span>
+                Proofs
+            </Link>
+            <Link 
                 to="/admin/settings" 
                 onClick={() => setIsSidebarOpen(false)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname.includes('settings') ? 'bg-accent text-primary' : 'hover:bg-white/10 text-white'}`}

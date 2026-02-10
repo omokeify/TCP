@@ -15,6 +15,7 @@ const AdminLogin = lazy(() => import('./pages/admin/AdminLogin').then(module => 
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
 const ApplicationDetail = lazy(() => import('./pages/admin/ApplicationDetail').then(module => ({ default: module.ApplicationDetail })));
 const AdminSettings = lazy(() => import('./pages/admin/AdminSettings').then(module => ({ default: module.AdminSettings })));
+const ProofReview = lazy(() => import('./pages/admin/ProofReview').then(module => ({ default: module.ProofReview })));
 
 function App() {
   return (
@@ -47,6 +48,7 @@ function App() {
             <Route path="/admin/applications" element={<AdminDashboard />} />
             <Route path="/admin/applications/:id" element={<ApplicationDetail />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
+            <Route path="/admin/proofs" element={<ProofReview />} />
 
             {/* Catch-all for unknown routes */}
             <Route path="*" element={<Navigate to="/apply" replace />} />

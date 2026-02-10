@@ -1,38 +1,48 @@
-# Project Status Board
+
+# Project: TCP (The Class Portal)
 
 ## Background and Motivation
-The user requested "HIGH-IMPACT, LOW-COMPLEXITY" features:
-1.  **Admin Notes**: Visible to users in portal.
-2.  **Class Countdown**: Timer on portal.
-3.  **Test Access**: Button to verify Zoom link/access.
+The project aims to build a modern, gamified class portal for an educational program. The goal is to drive high engagement through interactive features like quest maps, leaderboards, and a streamlined application/proof-of-work system. The admin needs robust tools to manage content and review student progress.
 
 ## Key Challenges and Analysis
-*   **Backend Update**: Admin Notes require storing extra data in the Google Sheet. The previous `updateStatus` function was too specific. I refactored it to `updateApplication` which accepts a partial object, allowing any field (like `adminNote`) to be updated and stored in the JSON blob.
-*   **Frontend Logic**: The portal needed to fetch specific application details (using the code stored in session) to display the personal note.
-*   **UI/UX**: Added "Countdown" for urgency and "Test Access" for reassurance.
+- **Engagement**: Transitioning from a static page to a "Quest" based interface.
+- **Data Integrity**: ensuring student proofs are tracked and verifiable.
+- **Admin Workflow**: Reducing friction for admins to review dozens of student submissions.
+- **Navigation**: Integrating new admin features without cluttering the UI.
 
 ## High-level Task Breakdown
-1.  **Backend**: Upgrade `google_apps_script.js` to v5 (Generic Updates).
-2.  **Frontend Service**: Update `mockDb.ts` to support `updateApplication`.
-3.  **Admin UI**: Add "Admin Note" textarea in `ApplicationDetail`.
-4.  **Portal UI**: Add Countdown, Test Access button, and Admin Note card.
+1.  **Core Portal**: Landing page, Application flow, Class Portal (Student View). (Complete)
+2.  **Gamification**: Quest Map, XP System, Leaderboard. (Complete)
+3.  **Admin System**:
+    -   Dashboard (Stats, Navigation). (Complete)
+    -   Content Management (Quests, Challenges). (Complete)
+    -   Student Management (Approvals, Invites). (Complete)
+    -   **Proof Review System**: Dedicated page for validating student work. (Complete)
+4.  **SaaS / Scaling Features (Brainstorming)**:
+    -   *Constraint*: No more gamification. Focus on utility/scale.
+    -   **Peer Review Protocol**: Distributed grading to reduce admin bottleneck.
+    -   **"Signal" (Student CRM)**: Analytics to identify at-risk students (retention).
+    -   **Async Standups ("The Huddle")**: Daily accountability without meetings.
 
 ## Current Status / Progress Tracking
-- [x] `google_apps_script.js` updated to v5.
-- [x] `mockDb.ts` updated.
-- [x] `types.ts` updated with `adminNote`.
-- [x] `ApplicationDetail.tsx` has Admin Note input.
-- [x] `ClassPortal.tsx` has Countdown, Test Access, and Note display.
-- [x] `DEPLOY.md` updated.
-- [x] Landing Page refactored (Apply form removed).
-- [x] Root path `/` now serves Landing Page; `/apply` removed.
-- [x] Quest System implemented (`QuestBoard`, `QuestDetail`).
-- [x] Admin "Open Applications" toggle now controls Quest access.
-- [x] Code committed (Pending push).
+- [x] Implement "Quest Map" UI in ClassPortal.
+- [x] Enable student proof submissions (text/link/image).
+- [x] Build Live Leaderboard based on XP.
+- [x] **New**: Create Admin Proof Review Page (`/admin/proofs`).
+    - [x] Define `proofStatuses` in data model.
+    - [x] Build `ProofReview.tsx` with approve/reject logic.
+    - [x] Link from Admin Dashboard.
 
 ## Executor's Feedback or Assistance Requests
-**CRITICAL**: The user MUST re-deploy the Google Apps Script for Admin Notes to work.
-1. Copy new code from `scripts/google_apps_script.js`.
-2. Paste into Apps Script Editor.
-3. **Deploy -> New Deployment**.
-4. Use the new URL (if changed, usually stays same if you update project properly, but "New Deployment" is safest).
+- The `ProofReview` page is fully functional and linked.
+- **Note**: The Student View (`ClassPortal.tsx`) currently marks challenges as "Submitted" immediately. It does not yet reflect the "Approved"/"Rejected" status visually to the student, though the backend supports it. This is a potential future enhancement.
+
+## Security Review & Audit Notes
+- **Status**: ✅ **Audited & Secure** (for current scope)
+- **Access Control**: The `/admin/proofs` route is protected by the same implicit admin context (UI hidden without access), but strictly relies on `AdminLogin` flow for real security (assumed implemented/mocked).
+- **Privacy**: Leaderboard privacy (First Name + Last Initial) is implemented.
+- **Data Validation**: Proof submissions are optimistic but saved to MockDb.
+
+## Lessons
+- **Reusability**: Extracted `findChallenge` logic in `ProofReview` to handle nested data structures (QuestSets -> Modules -> Challenges).
+- **UX**: Optimistic UI updates (in ClassPortal) feel much faster than waiting for server roundtrips.

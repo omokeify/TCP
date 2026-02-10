@@ -159,6 +159,48 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleExportCSV = () => {
+    const headers = ['ID', 'Email', 'Full Name', 'Status', 'Submitted At', 'Wave', 'Twitter'];
+    const rows = apps.map(app => [
+        app.id,
+        app.email,
+        app.fullName,
+        app.status,
+        app.submittedAt,
+        app.wave || '',
+        app.twitterHandle || ''
+    ]);
+    
+    const csvContent = "data:text/csv;charset=utf-8," 
+        + [headers, ...rows].map(e => e.join(",")).join("\n");
+        
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "applications_export.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleSetWave = async () => {
+    const waveStr = prompt("Enter Wave Number for selected applications (e.g. 1, 2):");
+    if (!waveStr) return;
+    const wave = parseInt(waveStr);
+    if (isNaN(wave)) return;
+
+    if (!window.confirm(`Set Wave ${wave} for ${selectedIds.size} applications?`)) return;
+    
+    try {
+        await MockService.batchSetWave(Array.from(selectedIds), wave);
+        alert("Waves updated!");
+        loadData();
+        setSelectedIds(new Set());
+    } catch (e) {
+        alert("Failed to update waves");
+    }
+  };
+
   const filteredApps = apps.filter(app => {
     const matchesFilter = filter === 'all' || app.status === filter;
     const matchesSearch = app.email.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -177,6 +219,12 @@ export const AdminDashboard: React.FC = () => {
     pending: apps.filter(a => a.status === ApplicationStatus.PENDING).length,
     approved: apps.filter(a => a.status === ApplicationStatus.APPROVED).length
   };
+
+  const emailCounts = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    apps.forEach(a => counts[a.email.toLowerCase()] = (counts[a.email.toLowerCase()] || 0) + 1);
+    return counts;
+  }, [apps]);
 
   if (loading) return <div className="p-8 text-primary">Loading data...</div>;
 
@@ -205,6 +253,14 @@ export const AdminDashboard: React.FC = () => {
              Message ({selectedIds.size})
           </button>
           <button 
+             onClick={handleSetWave}
+             disabled={selectedIds.size === 0}
+             className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white border-2 border-purple-600 rounded-lg font-bold hover:bg-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+             <span className="material-icons-outlined text-sm">waves</span>
+             Set Wave
+          </button>
+          <button 
              onClick={handleTriggerReminders}
              disabled={reminding}
              className="flex items-center gap-2 px-4 py-2 bg-accent/20 text-primary dark:text-accent border-2 border-accent rounded-lg font-semibold hover:bg-accent hover:text-primary transition-all disabled:opacity-50"
@@ -212,7 +268,10 @@ export const AdminDashboard: React.FC = () => {
              <span className="material-icons-outlined text-sm">notifications_active</span>
              {reminding ? 'Sending...' : 'Send Reminders'}
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 border-2 border-primary dark:border-accent text-primary dark:text-accent rounded-lg font-semibold hover:bg-primary hover:text-white dark:hover:bg-accent dark:hover:text-primary transition-all">
+          <button 
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 px-4 py-2 border-2 border-primary dark:border-accent text-primary dark:text-accent rounded-lg font-semibold hover:bg-primary hover:text-white dark:hover:bg-accent dark:hover:text-primary transition-all"
+          >
             <span className="material-icons-outlined text-sm">download</span>
             Export List
           </button>
@@ -288,6 +347,7 @@ export const AdminDashboard: React.FC = () => {
                     />
                 </th>
                 <th className="px-6 py-4">Applicant Email</th>
+                <th className="px-6 py-4">Wave</th>
                 <th className="px-6 py-4">Status</th>
                 <th className="px-6 py-4">Submission Date</th>
                 <th className="px-6 py-4 text-right">Actions</th>
@@ -312,10 +372,29 @@ export const AdminDashboard: React.FC = () => {
                             {app.fullName.substring(0, 2)}
                         </div>
                         <div className="flex flex-col">
-                            <span className="font-medium text-primary dark:text-chalk">{app.email}</span>
+                            <div className="flex items-center gap-1">
+                                <span className="font-medium text-primary dark:text-chalk">{app.email}</span>
+                                {emailCounts[app.email.toLowerCase()] > 1 && (
+                                    <div className="group relative">
+                                        <span className="material-icons-outlined text-amber-500 text-sm cursor-help">warning</span>
+                                        <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 w-48 bg-gray-900 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                                            Duplicate Email ({emailCounts[app.email.toLowerCase()]} submissions)
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                             <span className="text-xs text-ash/60 dark:text-chalk/40">{app.fullName}</span>
                         </div>
                       </div>
+                    </td>
+                    <td className="px-6 py-5">
+                        {app.wave ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+                                Wave {app.wave}
+                            </span>
+                        ) : (
+                            <span className="text-xs text-ash/40 dark:text-chalk/30">-</span>
+                        )}
                     </td>
                     <td className="px-6 py-5">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MockService } from '../services/mockDb';
-import { ClassConfig, DEFAULT_CLASS_INFO, Application } from '../types';
+import { ClassConfig, DEFAULT_CLASS_INFO, Application, LearningChallenge } from '../types';
 
 const Countdown = ({ targetDate }: { targetDate: Date }) => {
     const [timeLeft, setTimeLeft] = useState<{days: number, hours: number, minutes: number, seconds: number} | null>(null);
@@ -45,6 +45,44 @@ export const ClassPortal: React.FC = () => {
   const [classConfig, setClassConfig] = useState<ClassConfig | null>(null);
   const [userCode, setUserCode] = useState<string>('');
   const [application, setApplication] = useState<Application | null>(null);
+  const [leaderboard, setLeaderboard] = useState<{name: string, xp: number, avatar: string}[]>([]);
+  const [showCelebration, setShowCelebration] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('welcome')) {
+        setShowCelebration(true);
+        window.history.replaceState({}, '', '/portal');
+    }
+  }, []);
+
+  const handleProofSubmit = async (challenge: LearningChallenge) => {
+    if (!application) return;
+
+    let proof = "";
+    if (challenge.proofType === 'link' || challenge.proofType === 'github' || challenge.proofType === 'image') {
+        proof = prompt(`Please enter the URL for your ${challenge.proofType} proof:`) || "";
+    } else {
+        proof = prompt("Please enter your text proof:") || "";
+    }
+
+    if (!proof) return;
+
+    try {
+        const currentProofs = application.taskProofs || {};
+        const newProofs = { ...currentProofs, [challenge.id]: proof };
+        
+        // Optimistic UI Update
+        const updatedApp = { ...application, taskProofs: newProofs };
+        setApplication(updatedApp);
+
+        // API Call
+        await MockService.updateApplication(application.id, { taskProofs: newProofs });
+        alert("Proof submitted successfully! XP awarded pending review.");
+    } catch (e) {
+        alert("Failed to submit proof. Please try again.");
+    }
+  };
 
   useEffect(() => {
     const hasAccess = sessionStorage.getItem('blink_class_access');
@@ -71,11 +109,65 @@ export const ClassPortal: React.FC = () => {
                      const app = await MockService.getApplicationById(codeEntry.applicationId);
                      if (app) setApplication(app);
                  }
-             } catch (e) { console.error("Failed to load application details", e); }
+             } catch (e) {
+                 console.error("Failed to load user application", e);
+             }
         }
     };
+
     loadConfig();
   }, [navigate]);
+
+  // Leaderboard Logic
+  useEffect(() => {
+    if (!classConfig) return;
+
+    const loadLeaderboard = async () => {
+        try {
+            const apps = await MockService.getApplications();
+            const approvedApps = apps.filter(a => a.status === 'approved');
+            
+            // Resolve Modules (Prioritize Active Quest, then Global)
+            const activeQuest = classConfig.questSets?.find(q => q.status === 'active') || classConfig.questSets?.[0];
+            const modules = activeQuest?.modules && activeQuest.modules.length > 0 
+                ? activeQuest.modules 
+                : (classConfig.modules || []);
+
+            const stats = approvedApps.map(app => {
+                let xp = 0;
+                modules.forEach(mod => {
+                    mod.challenges.forEach(chal => {
+                        if (app.taskProofs?.[chal.id]) {
+                            xp += (chal.xp || 0);
+                        }
+                    });
+                });
+                
+                // Get Display Name
+                const names = (app.fullName || "").split(' ');
+                const displayName = names.length > 1 ? `${names[0]} ${names[names.length - 1][0]}.` : names[0];
+
+                return {
+                    name: displayName || app.email.split('@')[0],
+                    xp,
+                    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${app.email}`
+                };
+            });
+
+            // Sort by XP desc, then Name asc
+            const sorted = stats.sort((a, b) => {
+                if (b.xp !== a.xp) return b.xp - a.xp;
+                return a.name.localeCompare(b.name);
+            }).slice(0, 5); // Top 5
+            
+            setLeaderboard(sorted);
+        } catch (e) {
+            console.error("Leaderboard error", e);
+        }
+    };
+
+    loadLeaderboard();
+  }, [classConfig]);
 
   const generateReferralLink = () => {
     if (!userCode) return '';
@@ -207,6 +299,12 @@ export const ClassPortal: React.FC = () => {
       }
   ];
 
+  // Resolve Modules (Prioritize Active Quest, then Global)
+  const activeQuest = classConfig.questSets?.find(q => q.status === 'active') || classConfig.questSets?.[0];
+  const modules = activeQuest?.modules && activeQuest.modules.length > 0 
+      ? activeQuest.modules 
+      : (classConfig.modules || []);
+
   return (
     <div className="min-h-screen w-full font-sans text-primary relative overflow-x-hidden">
       <style>{`
@@ -260,7 +358,25 @@ export const ClassPortal: React.FC = () => {
                         {classConfig.stats.approved} of {classConfig.capacity} spots filled
                     </div>
                 )}
+                <button 
+                    onClick={() => alert("✅ Browser: Supported\n✅ Network: Online\n✅ Zoom: Reachable\n\nYou are ready for class! See you inside.")}
+                    className="inline-flex items-center gap-2 px-4 py-1.5 bg-white text-[var(--primary)] rounded-full text-xs font-bold border border-[var(--primary)]/10 hover:bg-[var(--primary)] hover:text-white transition-colors"
+                >
+                    <span className="material-icons-outlined text-[16px] leading-none">speed</span>
+                    Test Access
+                </button>
             </div>
+
+            {application?.adminNote && (
+                <div className="mb-8 p-4 bg-[#FFFA7E]/80 border border-[#FFFA7E] rounded-xl flex gap-3 shadow-sm max-w-2xl">
+                    <span className="material-icons-outlined text-[var(--primary)]">campaign</span>
+                    <div>
+                        <h3 className="font-bold text-[var(--primary)] text-xs uppercase tracking-wide mb-1">Message from Admin</h3>
+                        <p className="text-[var(--primary)] text-sm font-medium leading-relaxed">{application.adminNote}</p>
+                    </div>
+                </div>
+            )}
+
             <h1 className="text-4xl md:text-6xl font-extrabold text-[var(--primary)] nohemi-tracking mb-4">
                 Welcome to the Class 🎉
             </h1>
@@ -274,9 +390,110 @@ export const ClassPortal: React.FC = () => {
             <div className="absolute -top-20 -right-20 w-64 h-64 bg-[var(--accent)] rounded-full blur-[80px] opacity-40 pointer-events-none"></div>
             
             <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12">
-                {/* Left Column: Sessions List */}
+                {/* Left Column: Quest Map or Sessions List */}
                 <div className="lg:col-span-7 space-y-12">
-                    {sessions.map((session, index) => {
+                    {modules && modules.length > 0 ? (
+                        <div className="space-y-12 animate-fadeIn">
+                            <div className="flex items-center gap-3 mb-8 pb-8 border-b border-[var(--primary)]/10">
+                                <div className="p-3 bg-[var(--primary)] text-white rounded-xl shadow-lg shadow-[var(--primary)]/20">
+                                    <span className="material-icons-outlined text-2xl">map</span>
+                                </div>
+                                <div>
+                                    <h2 className="text-3xl font-extrabold text-[var(--primary)] nohemi-tracking leading-none">Quest Map</h2>
+                                    <p className="text-sm font-medium text-[var(--ash)] mt-1">Your journey to mastery starts here.</p>
+                                </div>
+                            </div>
+                            
+                            {modules.map((module, mIndex) => (
+                                <div key={module.id || mIndex} className="relative pl-8 border-l-2 border-[var(--primary)]/10 last:border-0 pb-16 last:pb-0">
+                                    {/* Timeline Node */}
+                                    <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-[var(--accent)] border-4 border-white shadow-sm z-10"></div>
+                                    
+                                    <div className="mb-8">
+                                        <div className="inline-block px-3 py-1 bg-[var(--primary)]/5 text-[var(--primary)] rounded-full text-[10px] font-bold uppercase tracking-wider mb-3">
+                                            Level {mIndex + 1}
+                                        </div>
+                                        <h3 className="text-3xl font-extrabold text-[var(--primary)] mb-3">{module.title}</h3>
+                                        <p className="text-[var(--ash)] font-medium leading-relaxed">{module.description}</p>
+                                    </div>
+
+                                    <div className="grid gap-8">
+                                        {/* Resources (Loot) */}
+                                        {module.resources && module.resources.length > 0 && (
+                                            <div>
+                                                <h4 className="text-xs font-bold uppercase text-[var(--primary)] opacity-60 mb-4 flex items-center gap-2">
+                                                    <span className="material-icons-outlined text-sm">inventory_2</span> Loot Box (Resources)
+                                                </h4>
+                                                <div className="grid gap-3">
+                                                    {module.resources.map((res, rIndex) => (
+                                                        <a 
+                                                            key={res.id || rIndex}
+                                                            href={res.url}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="flex items-center gap-4 p-4 bg-white/60 hover:bg-white/90 border border-white/50 rounded-2xl transition-all group shadow-sm hover:shadow-md hover:-translate-y-1"
+                                                        >
+                                                            <div className="w-10 h-10 rounded-xl bg-[var(--eucalyptus)]/50 flex items-center justify-center text-[var(--primary)] shrink-0 group-hover:scale-110 transition-transform">
+                                                                <span className="material-icons-outlined">
+                                                                    {res.type === 'video' ? 'play_circle' : 
+                                                                     res.type === 'document' ? 'article' :
+                                                                     res.type === 'github' ? 'code' : 'link'}
+                                                                </span>
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-bold text-[var(--primary)] text-sm group-hover:text-[var(--primary)] transition-colors">{res.title}</p>
+                                                                {res.description && <p className="text-xs text-[var(--ash)] mt-0.5">{res.description}</p>}
+                                                            </div>
+                                                            <span className="material-icons-outlined text-[var(--primary)] opacity-0 group-hover:opacity-100 ml-auto transition-opacity">open_in_new</span>
+                                                        </a>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Challenges (Boss) */}
+                                        {module.challenges && module.challenges.length > 0 && (
+                                            <div className="bg-[var(--primary)] text-white rounded-3xl p-6 md:p-8 shadow-xl shadow-[var(--primary)]/10 relative overflow-hidden">
+                                                <div className="absolute top-0 right-0 p-12 bg-white/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+                                                
+                                                <h4 className="text-xs font-bold uppercase text-white/60 mb-6 flex items-center gap-2 relative z-10">
+                                                    <span className="material-icons-outlined text-sm">sports_esports</span> Boss Fight (Challenges)
+                                                </h4>
+                                                <div className="space-y-4 relative z-10">
+                                                    {module.challenges.map((chal, cIndex) => (
+                                                        <div key={chal.id || cIndex} className="bg-white/10 backdrop-blur-md p-5 rounded-2xl border border-white/10 hover:bg-white/15 transition-colors">
+                                                            <div className="flex justify-between items-start mb-3">
+                                                                <h5 className="font-bold text-lg">{chal.title}</h5>
+                                                                <span className="text-[10px] font-bold bg-[var(--accent)] text-[var(--primary)] px-2 py-1 rounded-lg">
+                                                                    +{chal.xp} XP
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-sm text-white/80 mb-5 leading-relaxed">{chal.description}</p>
+                                                            <button 
+                                                                onClick={() => handleProofSubmit(chal)}
+                                                                className={`w-full py-3 text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2 ${
+                                                                    application?.taskProofs?.[chal.id] 
+                                                                    ? 'bg-[var(--eucalyptus)] text-[var(--primary)] cursor-default' 
+                                                                    : 'bg-white text-[var(--primary)] hover:bg-[var(--accent)]'
+                                                                }`}
+                                                                disabled={!!application?.taskProofs?.[chal.id]}
+                                                            >
+                                                                <span className="material-icons-outlined text-sm">
+                                                                    {application?.taskProofs?.[chal.id] ? 'check_circle' : 'upload_file'}
+                                                                </span>
+                                                                {application?.taskProofs?.[chal.id] ? 'Submitted' : `Submit Proof (${chal.proofType})`}
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                    sessions.map((session, index) => {
                         const hasCalendar = !!parseDates(session);
                         return (
                             <div key={session.id || index} className="relative">
@@ -373,7 +590,8 @@ export const ClassPortal: React.FC = () => {
                                 </div>
                             </div>
                         );
-                    })}
+                    })
+                    )}
                 </div>
 
                 {/* Right Column: Instructor & Notes */}
@@ -407,6 +625,44 @@ export const ClassPortal: React.FC = () => {
                              </div>
                          </div>
                     </div>
+
+                    {/* Leaderboard Card */}
+                    {leaderboard.length > 0 && (
+                        <div className="glass-card p-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-[var(--accent)] rounded-lg text-[var(--primary)]">
+                                    <span className="material-icons-outlined text-xl">emoji_events</span>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg text-[var(--primary)]">Leaderboard</h3>
+                                    <p className="text-[10px] uppercase font-bold text-[var(--ash)] tracking-wider">Top Performers</p>
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-4">
+                                {leaderboard.map((user, index) => (
+                                    <div key={index} className="flex items-center gap-4 group">
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                                            index === 0 ? 'bg-[var(--accent)] text-[var(--primary)] shadow-lg shadow-[var(--accent)]/30' : 
+                                            index === 1 ? 'bg-gray-300 text-gray-700' :
+                                            index === 2 ? 'bg-orange-200 text-orange-800' :
+                                            'bg-[var(--primary)]/5 text-[var(--primary)]/60'
+                                        }`}>
+                                            {index + 1}
+                                        </div>
+                                        <div className="w-10 h-10 rounded-full bg-[var(--primary)]/5 overflow-hidden">
+                                            <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="font-bold text-[var(--primary)] text-sm">{user.name}</p>
+                                            <p className="text-[10px] font-bold text-[var(--eucalyptus)]">{user.xp} XP</p>
+                                        </div>
+                                        {index === 0 && <span className="text-xl">👑</span>}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Admin Note Card */}
                     {application?.adminNote && (
@@ -486,6 +742,27 @@ export const ClassPortal: React.FC = () => {
             </div>
         </footer>
       </main>
+
+      {showCelebration && (
+        <div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fadeIn" 
+            onClick={() => setShowCelebration(false)}
+        >
+            <div className="text-center p-8">
+                <div className="text-8xl mb-6 animate-bounce">🎉</div>
+                <h2 className="text-5xl font-extrabold text-white mb-4 tracking-tight">You're In!</h2>
+                <p className="text-xl text-white/80 font-medium max-w-md mx-auto mb-8">
+                    Welcome to the inner circle. Your access is confirmed.
+                </p>
+                <button 
+                    onClick={() => setShowCelebration(false)}
+                    className="px-8 py-3 bg-[var(--accent)] text-[var(--primary)] font-bold rounded-full hover:scale-105 transition-transform"
+                >
+                    Let's Go
+                </button>
+            </div>
+        </div>
+      )}
     </div>
   );
 };

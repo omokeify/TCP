@@ -11,10 +11,12 @@ export interface Application {
   twitterHandle?: string; // Kept for backward compatibility or as a standard field
   whyJoin: string;
   taskProofs: Record<string, string>; // Map of taskId -> user input
+  proofStatuses?: Record<string, 'approved' | 'rejected'>; // Map of taskId -> status
   status: ApplicationStatus;
   submittedAt: string; // ISO Date string
   referrerId?: string; // Tracking who referred this applicant
   adminNote?: string;
+  wave?: number; // Batch number for phased access
 }
 
 export interface InviteCode {
@@ -40,7 +42,7 @@ export interface ClassResource {
   title: string;
   description: string;
   url: string;
-  type: 'video' | 'link' | 'stream' | 'community' | 'document';
+  type: 'video' | 'link' | 'stream' | 'community' | 'document' | 'github';
 }
 
 export interface ClassSession {
@@ -78,6 +80,7 @@ export interface QuestSet {
 
   // Class Content & Resources (Quest Specific)
   resources?: ClassResource[];
+  modules?: LearningModule[];
 
   // Legacy/UI
   tutor?: {
@@ -114,6 +117,24 @@ export interface ClassConfig {
     total: number;
   };
   capacity?: number;
+  modules?: LearningModule[];
+}
+
+export interface LearningChallenge {
+  id: string;
+  title: string;
+  description: string;
+  proofType: 'link' | 'text' | 'image' | 'github';
+  xp: number;
+}
+
+export interface LearningModule {
+  id: string;
+  title: string;
+  description: string;
+  order: number;
+  resources: ClassResource[];
+  challenges: LearningChallenge[];
 }
 
 export const DEFAULT_CLASS_INFO: ClassConfig = {

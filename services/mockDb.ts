@@ -68,7 +68,7 @@ const appCache = new SimpleCache<Application[]>(2 * 60 * 1000); // 2 mins for ap
 export const MockService = {
   // --- Database Configuration ---
   getDbUrl: (): string | null => {
-     return localStorage.getItem(DB_URL_KEY) || import.meta.env.VITE_DB_URL || null;
+     return localStorage.getItem(DB_URL_KEY) || (import.meta as any).env?.VITE_DB_URL || null;
   },
 
   setDbUrl: (url: string) => {
@@ -260,6 +260,45 @@ export const MockService = {
     localStorage.setItem(APPS_KEY, JSON.stringify(updatedApps));
     return { success: true, count };
   },
+
+  batchSetWave: async (ids: string[], wave: number): Promise<{ success: boolean; count: number }> => {
+    const dbUrl = MockService.getDbUrl();
+    if (dbUrl) {
+       // Ideally we would have a remote endpoint for this
+       // For now, assume local fallback if not implemented remotely, or implement remote call
+       // const res = await MockService.callScript('batch_set_wave', 'POST', { ids, wave });
+       // return res;
+    }
+
+    await delay(500);
+    const apps = await MockService.getApplications();
+    const updatedApps = apps.map(app => ids.includes(app.id) ? { ...app, wave } : app);
+    localStorage.setItem(APPS_KEY, JSON.stringify(updatedApps));
+    return { success: true, count: ids.length };
+  },
+
+  getCapacityStats: async (): Promise<{ capacity: number; approved: number; remaining: number }> => {
+    const config = await MockService.getClassConfig();
+    const apps = await MockService.getApplications();
+    const approved = apps.filter(a => a.status === ApplicationStatus.APPROVED).length;
+    const capacity = config.capacity || 50;
+    
+    return {
+        capacity,
+        approved,
+        remaining: Math.max(0, capacity - approved)
+    };
+  },
+
+  checkForDuplicates: async (email: string, ip?: string): Promise<{ isDuplicate: boolean; existingId?: string }> => {
+    const apps = await MockService.getApplications();
+    const match = apps.find(a => a.email.toLowerCase() === email.toLowerCase());
+    return {
+        isDuplicate: !!match,
+        existingId: match?.id
+    };
+  },
+
 
   sendEmail: async (recipient: string, subject: string, body: string): Promise<{ success: boolean; message?: string }> => {
     const dbUrl = MockService.getDbUrl();

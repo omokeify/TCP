@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MockService } from '../../services/mockDb';
-import { ClassConfig, DEFAULT_CLASS_INFO, TaskConfig, ClassResource, QuestSet, ClassSession } from '../../types';
+import { ClassConfig, DEFAULT_CLASS_INFO, TaskConfig, ClassResource, QuestSet, ClassSession, LearningModule, LearningChallenge } from '../../types';
 
 export const AdminSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -215,6 +215,73 @@ export const AdminSettings: React.FC = () => {
               ...newQuestSets[questIndex].sessions![sessionIndex],
               [field]: value
           };
+          setConfig({ ...config, questSets: newQuestSets });
+      }
+  };
+
+  // --- Quest Modules (Curriculum) Management ---
+  const addQuestModule = (questIndex: number) => {
+      const newQuestSets = [...(config.questSets || [])];
+      const newModule: any = { // using any temporarily to bypass strict check if types aren't fully reloaded
+          id: Math.random().toString(36).substr(2, 9),
+          title: "New Module",
+          description: "Module description",
+          order: (newQuestSets[questIndex].modules?.length || 0) + 1,
+          resources: [],
+          challenges: []
+      };
+      newQuestSets[questIndex].modules = [...(newQuestSets[questIndex].modules || []), newModule];
+      setConfig({ ...config, questSets: newQuestSets });
+  };
+
+  const removeQuestModule = (questIndex: number, moduleIndex: number) => {
+      const newQuestSets = [...(config.questSets || [])];
+      if (newQuestSets[questIndex].modules) {
+          newQuestSets[questIndex].modules!.splice(moduleIndex, 1);
+          setConfig({ ...config, questSets: newQuestSets });
+      }
+  };
+
+  const handleQuestModuleChange = (questIndex: number, moduleIndex: number, field: string, value: any) => {
+      const newQuestSets = [...(config.questSets || [])];
+      if (newQuestSets[questIndex].modules) {
+          newQuestSets[questIndex].modules![moduleIndex] = {
+              ...newQuestSets[questIndex].modules![moduleIndex],
+              [field]: value
+          };
+          setConfig({ ...config, questSets: newQuestSets });
+      }
+  };
+
+  const addModuleChallenge = (questIndex: number, moduleIndex: number) => {
+      const newQuestSets = [...(config.questSets || [])];
+      const newChallenge: LearningChallenge = {
+          id: Math.random().toString(36).substr(2, 9),
+          title: "New Challenge",
+          description: "Describe the challenge",
+          proofType: "link",
+          xp: 100
+      };
+      if (newQuestSets[questIndex].modules && newQuestSets[questIndex].modules![moduleIndex]) {
+         const module = newQuestSets[questIndex].modules![moduleIndex];
+         module.challenges = [...(module.challenges || []), newChallenge];
+         setConfig({ ...config, questSets: newQuestSets });
+      }
+  };
+
+  const removeModuleChallenge = (questIndex: number, moduleIndex: number, challengeIndex: number) => {
+      const newQuestSets = [...(config.questSets || [])];
+      if (newQuestSets[questIndex].modules && newQuestSets[questIndex].modules![moduleIndex]) {
+          newQuestSets[questIndex].modules![moduleIndex].challenges.splice(challengeIndex, 1);
+          setConfig({ ...config, questSets: newQuestSets });
+      }
+  };
+
+  const handleModuleChallengeChange = (questIndex: number, moduleIndex: number, challengeIndex: number, field: string, value: any) => {
+      const newQuestSets = [...(config.questSets || [])];
+      if (newQuestSets[questIndex].modules && newQuestSets[questIndex].modules![moduleIndex]) {
+          const challenges = newQuestSets[questIndex].modules![moduleIndex].challenges;
+          challenges[challengeIndex] = { ...challenges[challengeIndex], [field]: value };
           setConfig({ ...config, questSets: newQuestSets });
       }
   };
@@ -593,6 +660,74 @@ export const AdminSettings: React.FC = () => {
                                             </button>
                                         </div>
                                     ))}
+                                </div>
+                            </div>
+                            
+                            {/* Quest Modules (Curriculum) */}
+                            <div className="mb-6 p-4 bg-white/50 dark:bg-white/5 rounded-lg border border-chalk dark:border-white/5">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-sm font-bold text-primary dark:text-chalk uppercase">Learning Path (Modules)</h3>
+                                    <button 
+                                        onClick={() => addQuestModule(qIndex)}
+                                        className="text-xs px-2 py-1 bg-primary/10 text-primary rounded hover:bg-primary hover:text-white transition-colors flex items-center gap-1"
+                                    >
+                                        <span className="material-icons-outlined text-xs">add</span> Add Module
+                                    </button>
+                                </div>
+                                <div className="space-y-4">
+                                    {(quest.modules || []).map((module, mIndex) => (
+                                        <div key={module.id || mIndex} className="p-4 bg-white dark:bg-black/20 rounded-lg border-l-4 border-primary shadow-sm">
+                                            <div className="flex justify-between mb-2">
+                                                <input 
+                                                    className="font-bold text-primary dark:text-chalk bg-transparent border-b border-transparent focus:border-primary outline-none"
+                                                    value={module.title}
+                                                    onChange={(e) => handleQuestModuleChange(qIndex, mIndex, 'title', e.target.value)}
+                                                    placeholder="Module Title"
+                                                />
+                                                <button onClick={() => removeQuestModule(qIndex, mIndex)} className="text-ash/40 hover:text-red-500"><span className="material-icons-outlined text-sm">delete</span></button>
+                                            </div>
+                                            <textarea 
+                                                className="w-full text-xs bg-transparent border-none resize-none text-ash dark:text-chalk/60 focus:ring-0 p-0 mb-3"
+                                                value={module.description}
+                                                onChange={(e) => handleQuestModuleChange(qIndex, mIndex, 'description', e.target.value)}
+                                                placeholder="Module description..."
+                                                rows={1}
+                                            />
+                                            
+                                            {/* Challenges within Module */}
+                                            <div className="pl-4 border-l-2 border-ash/10 space-y-2">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-xs font-bold text-ash/60 uppercase">Challenges</span>
+                                                    <button onClick={() => addModuleChallenge(qIndex, mIndex)} className="text-xs text-primary hover:underline">+ Add Challenge</button>
+                                                </div>
+                                                {module.challenges.map((challenge, cIndex) => (
+                                                    <div key={challenge.id} className="flex gap-2 items-center bg-ash/5 p-2 rounded">
+                                                        <span className="text-xs font-bold text-primary bg-primary/10 px-1 rounded">XP {challenge.xp}</span>
+                                                        <input 
+                                                            className="flex-1 text-xs bg-transparent border-none outline-none text-primary dark:text-chalk"
+                                                            value={challenge.title}
+                                                            onChange={(e) => handleModuleChallengeChange(qIndex, mIndex, cIndex, 'title', e.target.value)}
+                                                            placeholder="Challenge Title"
+                                                        />
+                                                        <select 
+                                                            className="text-xs bg-transparent border-none outline-none text-ash/60"
+                                                            value={challenge.proofType}
+                                                            onChange={(e) => handleModuleChallengeChange(qIndex, mIndex, cIndex, 'proofType', e.target.value)}
+                                                        >
+                                                            <option value="link">Link</option>
+                                                            <option value="github">GitHub</option>
+                                                            <option value="text">Text</option>
+                                                            <option value="image">Image</option>
+                                                        </select>
+                                                        <button onClick={() => removeModuleChallenge(qIndex, mIndex, cIndex)} className="text-ash/40 hover:text-red-500"><span className="material-icons-outlined text-xs">close</span></button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {(quest.modules || []).length === 0 && (
+                                        <p className="text-xs text-ash/40 italic text-center py-4">No learning modules yet. Add one to start the curriculum.</p>
+                                    )}
                                 </div>
                             </div>
                             
