@@ -513,26 +513,26 @@ export const ClassPortal: React.FC = () => {
                                         </div>
                                     </div>
 
-                                <div className="bg-[var(--primary)] text-white rounded-[2rem] p-6 sm:p-8 flex flex-col xl:flex-row items-center justify-between gap-6 xl:gap-8 shadow-xl shadow-[var(--primary)]/20 relative">
-                                     <div className="flex items-center gap-4 sm:gap-5 w-full xl:w-auto">
+                                <div className="bg-[var(--primary)] text-white rounded-[2rem] p-6 sm:p-8 flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8 shadow-xl shadow-[var(--primary)]/20 relative flex-wrap overflow-hidden">
+                                     <div className="flex items-center gap-4 sm:gap-6 min-w-0">
                                          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/10 rounded-2xl flex items-center justify-center shrink-0 border border-white/10 shadow-inner">
                                              <span className="material-icons-outlined text-white text-2xl sm:text-3xl">videocam</span>
                                          </div>
                                          <div className="flex flex-col gap-0.5 sm:gap-1 min-w-0">
-                                             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Meeting Location</p>
-                                             <p className="text-lg sm:text-2xl font-extrabold text-white leading-tight truncate">
+                                             <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.2em] text-white/40">Meeting Location</p>
+                                             <p className="text-xl sm:text-2xl font-extrabold text-white leading-tight truncate">
                                                  {isLink(session.location) ? 'Live via Zoom/Meet' : (session.location || 'Online')}
                                              </p>
                                          </div>
                                      </div>
                                      
-                                     <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 w-full xl:w-auto justify-center xl:justify-end">
+                                     <div className="flex flex-wrap gap-3 sm:gap-4 justify-center lg:justify-end shrink-0">
                                          {isLink(session.location) && (
                                              <a 
                                                  href={session.location} 
                                                  target="_blank" 
                                                  rel="noreferrer"
-                                                 className="px-6 sm:px-8 py-3.5 sm:py-4 bg-[var(--accent)] text-[var(--primary)] rounded-2xl font-bold text-center hover:scale-[1.03] active:scale-[0.98] transition-all whitespace-nowrap shadow-xl shadow-[var(--accent)]/20 flex-1 sm:flex-none flex items-center justify-center gap-2"
+                                                 className="px-6 sm:px-8 py-3.5 sm:py-4 bg-[var(--accent)] text-[var(--primary)] rounded-2xl font-bold text-center hover:scale-[1.03] active:scale-[0.98] transition-all whitespace-nowrap shadow-xl shadow-[var(--accent)]/20 flex items-center justify-center gap-2"
                                              >
                                                  Join Meeting
                                                  <span className="material-icons-outlined text-sm">open_in_new</span>
@@ -541,7 +541,7 @@ export const ClassPortal: React.FC = () => {
                                          {hasCalendar && (
                                              <button 
                                                  onClick={() => handleGoogleCalendar(session)}
-                                                 className="px-6 sm:px-8 py-3.5 sm:py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-bold text-center hover:scale-[1.03] active:scale-[0.98] transition-all border border-white/20 whitespace-nowrap flex items-center justify-center gap-2 flex-1 sm:flex-none"
+                                                 className="px-6 sm:px-8 py-3.5 sm:py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-bold text-center hover:scale-[1.03] active:scale-[0.98] transition-all border border-white/20 whitespace-nowrap flex items-center justify-center gap-2"
                                                  title="Add to Google Calendar"
                                              >
                                                  <span className="material-icons-outlined text-sm">event</span>
