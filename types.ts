@@ -143,18 +143,19 @@ export const DEFAULT_CLASS_INFO: ClassConfig = {
   acceptingApplications: true,
   date: "February 12, 2026",
   time: "8:00 PM EST",
-  location: "Google Meet (Link sent upon acceptance)",
+  location: "Google Meet",
   instructor: "Fredy",
-  extraNotes: "Additional info visible only to accepted students in the portal.",
+  extraNotes: "Join the class via the link below. Make sure you have your environment set up and ready to code!",
   capacity: 50,
   sessions: [
      {
         id: "default-1",
-        title: "Main Session",
+        title: "Main Session: Vibe Coding Workshop",
         date: "February 12, 2026",
         time: "8:00 PM EST",
-        location: "Google Meet (Link sent upon acceptance)",
-        instructor: "Fredy"
+        location: "https://calendar.app.google/haLz7cFBtTWtFxKD8",
+        instructor: "Fredy",
+        description: "The primary workshop session where we dive deep into AI-assisted development."
      }
   ],
   questSets: [

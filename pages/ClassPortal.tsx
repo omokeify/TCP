@@ -488,26 +488,33 @@ export const ClassPortal: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
-                                    <div className="glass-card p-6 flex flex-col gap-3">
-                                        <div className="w-10 h-10 bg-[var(--eucalyptus)] rounded-xl flex items-center justify-center text-[var(--primary)]">
-                                            <span className="material-icons-outlined">calendar_today</span>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+                                        <div className="p-5 bg-white/60 rounded-2xl border border-white/50 shadow-sm">
+                                            <p className="text-[10px] font-bold uppercase text-[var(--ash)] mb-2 tracking-widest flex items-center gap-1.5">
+                                                <span className="material-icons-outlined text-sm">calendar_today</span> Schedule
+                                            </p>
+                                            <p className="text-xl font-extrabold text-[var(--primary)]">{session.date}</p>
+                                            <p className="text-sm font-bold text-[var(--ash)] mt-1">{session.time}</p>
                                         </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--ash)]">Date</p>
-                                            <p className="text-lg font-bold text-[var(--primary)]">{session.date}</p>
+                                        <div className="p-5 bg-white/60 rounded-2xl border border-white/50 shadow-sm relative group">
+                                            <p className="text-[10px] font-bold uppercase text-[var(--ash)] mb-2 tracking-widest flex items-center gap-1.5">
+                                                <span className="material-icons-outlined text-sm">place</span> Location
+                                            </p>
+                                            {isLink(session.location) ? (
+                                                <a 
+                                                    href={session.location} 
+                                                    target="_blank" 
+                                                    rel="noreferrer"
+                                                    className="text-lg font-extrabold text-[var(--primary)] hover:underline flex items-center gap-2 decoration-2 underline-offset-4"
+                                                >
+                                                    Join Class <span className="material-icons-outlined text-sm">open_in_new</span>
+                                                </a>
+                                            ) : (
+                                                <p className="text-xl font-extrabold text-[var(--primary)]">{session.location}</p>
+                                            )}
+                                            <p className="text-sm font-bold text-[var(--ash)] mt-1">Instructor: {session.instructor}</p>
                                         </div>
                                     </div>
-                                    <div className="glass-card p-6 flex flex-col gap-3">
-                                        <div className="w-10 h-10 bg-[var(--accent)] rounded-xl flex items-center justify-center text-[var(--primary)]">
-                                            <span className="material-icons-outlined">schedule</span>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--ash)]">Time</p>
-                                            <p className="text-lg font-bold text-[var(--primary)]">{session.time}</p>
-                                        </div>
-                                    </div>
-                                </div>
 
                                 <div className="bg-[var(--primary)] text-white rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl shadow-[var(--primary)]/20">
                                     <div className="flex items-center gap-4 w-full md:w-auto">
