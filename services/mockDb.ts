@@ -6,12 +6,12 @@ import { Application, ApplicationStatus, InviteCode, ClassConfig, DEFAULT_CLASS_
 */
 
 // Keys for LocalStorage
-const APPS_KEY = 'blink_applications';
-const CODES_KEY = 'blink_codes';
-const AUTH_KEY = 'blink_admin_auth';
+const APPS_KEY = 'tcp_applications';
+const CODES_KEY = 'tcp_codes';
+const AUTH_KEY = 'tcp_admin_auth';
 // Updated key version to force refresh of config on devices with old cached state
-const CONFIG_KEY = 'blink_class_config_v13';
-const DB_URL_KEY = 'blink_db_url';
+const CONFIG_KEY = 'tcp_class_config_v14';
+const DB_URL_KEY = 'tcp_db_url';
 
 // Helper to simulate delay
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -37,7 +37,7 @@ const fetchWithRetry = async (url: string, options?: RequestInit, retries = 3, b
 // --- Caching System ---
 class SimpleCache<T> {
     private cache: Record<string, { data: T; expires: number }> = {};
-    private storageKeyPrefix = 'blink_cache_';
+    private storageKeyPrefix = 'tcp_cache_';
 
     constructor(private ttl: number = 5 * 60 * 1000) {} // Default 5 mins
 

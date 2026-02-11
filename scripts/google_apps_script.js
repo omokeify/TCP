@@ -8,7 +8,7 @@
  * 4. Save the project (Ctrl+S)
  * 5. Click "Deploy" -> "New deployment"
  * 6. Select type: "Web app"
- * 11. Description: "Blink API v5 - Admin Notes"
+ * 11. Description: "TCP API v6 - Branding Update"
  * 8. Execute as: "Me"
  * 9. Who has access: "Anyone" (Important for the app to access it)
  * 10. Click "Deploy"

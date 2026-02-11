@@ -31,9 +31,9 @@ export const Access: React.FC = () => {
       const result = await MockService.validateAndUseCode(cleanCode);
       if (result.valid) {
         // Set session and redirect to the class portal
-        sessionStorage.setItem('blink_class_access', 'true');
+        sessionStorage.setItem('tcp_class_access', 'true');
         // Store code to identify user for referrals/calendar features
-        sessionStorage.setItem('blink_user_code', cleanCode);
+        sessionStorage.setItem('tcp_user_code', cleanCode);
         navigate('/portal?welcome=true');
       } else {
         // Show specific error message from the service (e.g. "Expired" vs "Invalid")

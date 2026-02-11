@@ -85,8 +85,8 @@ export const ClassPortal: React.FC = () => {
   };
 
   useEffect(() => {
-    const hasAccess = sessionStorage.getItem('blink_class_access');
-    const code = sessionStorage.getItem('blink_user_code');
+    const hasAccess = sessionStorage.getItem('tcp_class_access');
+    const code = sessionStorage.getItem('tcp_user_code');
     
     if (!hasAccess) {
       navigate('/access');
@@ -221,40 +221,6 @@ export const ClassPortal: React.FC = () => {
     } catch (e) {
         return null;
     }
-  };
-
-  const handleDownloadIcs = (session: { title: string, description?: string, instructor?: string, location?: string, date: string, time: string }) => {
-     const dates = parseDates(session);
-     if (!dates) {
-         alert("Could not generate calendar file. Date format may be invalid.");
-         return;
-     }
-
-     const formatDate = (date: Date) => date.toISOString().replace(/-|:|\.\d+/g, "");
-
-     const icsContent = [
-        "BEGIN:VCALENDAR",
-        "VERSION:2.0",
-        "PRODID:-//TCP//Blink Class//EN",
-        "BEGIN:VEVENT",
-        `UID:${Date.now()}@tcp.studio`,
-        `DTSTAMP:${formatDate(new Date())}`,
-        `DTSTART:${formatDate(dates.start)}`,
-        `DTEND:${formatDate(dates.end)}`,
-        `SUMMARY:${session.title}`,
-        `DESCRIPTION:${(session.description || classConfig?.description || "").replace(/\n/g, "\\n")}\\n\\nInstructor: ${session.instructor}`,
-        `LOCATION:${session.location}`,
-        "END:VEVENT",
-        "END:VCALENDAR"
-     ].join("\r\n");
-
-     const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-     const link = document.createElement('a');
-     link.href = window.URL.createObjectURL(blob);
-     link.setAttribute('download', 'class_schedule.ics');
-     document.body.appendChild(link);
-     link.click();
-     document.body.removeChild(link);
   };
 
   const handleGoogleCalendar = (session: { title: string, description?: string, instructor?: string, location?: string, date: string, time: string }) => {
@@ -550,7 +516,7 @@ export const ClassPortal: React.FC = () => {
                                         </div>
                                         <div className="overflow-hidden">
                                             <p className="text-xs font-medium text-white/60">Meeting Location</p>
-                                            <p className="text-xl font-bold text-white truncate">
+                                            <p className="text-xl font-bold text-white whitespace-normal break-words">
                                                 {isLink(session.location) ? 'Live via Zoom/Meet' : (session.location || 'Online')}
                                             </p>
                                         </div>
@@ -578,20 +544,14 @@ export const ClassPortal: React.FC = () => {
                                             </>
                                         )}
                                         {hasCalendar && (
-                                            <div className="flex gap-2 justify-center">
-                                                <button 
-                                                    onClick={() => handleDownloadIcs(session)}
-                                                    className="p-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl transition-colors"
-                                                    title="Download .ics"
-                                                >
-                                                    <span className="material-icons-outlined">download</span>
-                                                </button>
+                                            <div className="flex gap-2 justify-center w-full sm:w-auto">
                                                 <button 
                                                     onClick={() => handleGoogleCalendar(session)}
-                                                    className="p-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl transition-colors"
+                                                    className="px-6 py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl transition-colors flex items-center gap-2 font-bold whitespace-nowrap flex-1 sm:flex-none justify-center"
                                                     title="Add to Google Calendar"
                                                 >
-                                                    <span className="material-icons-outlined">event</span>
+                                                    <span className="material-icons-outlined text-sm">event</span>
+                                                    <span>Google Calendar</span>
                                                 </button>
                                             </div>
                                         )}
@@ -743,7 +703,7 @@ export const ClassPortal: React.FC = () => {
 
         <footer className="mt-12 flex flex-col md:flex-row items-center justify-between gap-6 opacity-60 px-4">
             <p className="text-xs font-medium text-[var(--primary)]">
-                © {new Date().getFullYear()} Blink Design Studio. All class materials are protected.
+                © {new Date().getFullYear()} TCP Design Studio. All class materials are protected.
             </p>
             <div className="flex gap-8">
                 <button className="text-xs font-bold text-[var(--primary)] hover:underline">Support Center</button>

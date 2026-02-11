@@ -183,7 +183,7 @@ export const QuestBoard: React.FC = () => {
         <footer className="mt-16 flex flex-col md:flex-row items-center justify-between gap-6 opacity-40">
           <div className="flex items-center gap-4">
             <p className="text-xs font-medium text-[var(--primary)]">
-              © 2024 Blink Quest Selection. Primary Entry Node.
+              © 2024 TCP Quest Selection. Primary Entry Node.
             </p>
           </div>
           <div className="flex gap-8">

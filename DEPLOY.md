@@ -16,13 +16,13 @@ To enable real email sending and Google Sheets database storage, follow these st
 2. Copy **ALL** the content.
 3. In the Apps Script editor, delete any existing code (usually `function myFunction() {...}`).
 4. Paste the copied code.
-5. Press `Ctrl + S` (or Cmd + S) to save. Name the project "Blink API".
+5. Press `Ctrl + S` (or Cmd + S) to save. Name the project "TCP API".
 
 ## 4. Deploy as Web App
 1. Click the blue **Deploy** button (top right) -> **New deployment**.
 2. Click the "Select type" gear icon -> **Web app**.
 3. Fill in the details:
-25→   - **Description**: `v9 - Batch Email`
+25→   - **Description**: `v10 - TCP Branding`
 26→   - **Execute as**: `Me` (your email)
    - **Who has access**: `Anyone` (**Crucial**: This allows your app to talk to the sheet).
 4. Click **Deploy**.
@@ -32,7 +32,7 @@ To enable real email sending and Google Sheets database storage, follow these st
 2. Select your Google account.
 3. You might see a "Google hasn't verified this app" warning (since you just wrote it).
    - Click **Advanced**.
-   - Click **Go to Blink API (unsafe)** at the bottom.
+   - Click **Go to TCP API (unsafe)** at the bottom.
 4. Click **Allow**.
 
 ## 6. Connect to Your App

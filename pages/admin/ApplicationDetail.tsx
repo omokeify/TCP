@@ -364,7 +364,7 @@ export const ApplicationDetail: React.FC = () => {
       </div>
 
       <footer className="mt-12 mb-8 text-center text-ash/40 dark:text-chalk/40 text-xs tracking-widest uppercase">
-        Blink Admin Platform © {new Date().getFullYear()} | Secure Environment
+        TCP Admin Platform © {new Date().getFullYear()} | Secure Environment
       </footer>
     </div>
   );
