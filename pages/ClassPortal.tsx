@@ -49,11 +49,10 @@ export const ClassPortal: React.FC = () => {
   const [showCelebration, setShowCelebration] = useState(false);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '');
+    const params = new URLSearchParams(window.location.search);
     if (params.get('welcome')) {
         setShowCelebration(true);
-        // Using HashRouter, we don't necessarily need to replace state to clean URL as easily without reloading,
-        // but we can just leave it for now or clean the hash if needed.
+        window.history.replaceState({}, '', '/portal');
     }
   }, []);
 
