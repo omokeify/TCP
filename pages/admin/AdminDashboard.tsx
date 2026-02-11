@@ -217,7 +217,8 @@ export const AdminDashboard: React.FC = () => {
   const stats = {
     total: apps.length,
     pending: apps.filter(a => a.status === ApplicationStatus.PENDING).length,
-    approved: apps.filter(a => a.status === ApplicationStatus.APPROVED).length
+    approved: apps.filter(a => a.status === ApplicationStatus.APPROVED).length,
+    rejected: apps.filter(a => a.status === ApplicationStatus.REJECTED).length
   };
 
   const emailCounts = React.useMemo(() => {
@@ -284,7 +285,7 @@ export const AdminDashboard: React.FC = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-white dark:bg-white/5 p-6 rounded-2xl shadow-sm border border-chalk dark:border-white/10">
           <p className="text-ash dark:text-chalk/60 text-sm font-medium">Total Submissions</p>
           <p className="text-3xl font-bold text-primary dark:text-white mt-2">{stats.total}</p>
@@ -296,6 +297,10 @@ export const AdminDashboard: React.FC = () => {
         <div className="bg-eucalyptus/20 dark:bg-eucalyptus/10 p-6 rounded-2xl shadow-sm border border-eucalyptus/30">
           <p className="text-ash dark:text-chalk/60 text-sm font-medium">Approved Total</p>
           <p className="text-3xl font-bold text-primary dark:text-eucalyptus mt-2">{stats.approved}</p>
+        </div>
+        <div className="bg-red-500/10 dark:bg-red-500/5 p-6 rounded-2xl shadow-sm border border-red-500/20">
+          <p className="text-ash dark:text-chalk/60 text-sm font-medium">Rejected Total</p>
+          <p className="text-3xl font-bold text-primary dark:text-red-400 mt-2">{stats.rejected}</p>
         </div>
       </div>
 
@@ -330,6 +335,12 @@ export const AdminDashboard: React.FC = () => {
                 className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${filter === ApplicationStatus.APPROVED ? 'bg-primary text-white' : 'bg-chalk dark:bg-white/10 text-ash dark:text-chalk hover:bg-chalk/80'}`}
             >
                 Approved
+            </button>
+            <button 
+                onClick={() => { setFilter(ApplicationStatus.REJECTED); setCurrentPage(1); }} 
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${filter === ApplicationStatus.REJECTED ? 'bg-primary text-white' : 'bg-chalk dark:bg-white/10 text-ash dark:text-chalk hover:bg-chalk/80'}`}
+            >
+                Rejected
             </button>
           </div>
         </div>
