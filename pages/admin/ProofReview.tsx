@@ -67,6 +67,7 @@ export const ProofReview: React.FC = () => {
 
         // Save to DB
         await MockService.updateApplication(app.id, { proofStatuses: newStatuses });
+        await loadData();
     };
 
     const handleReject = async (item: ProofItem) => {
@@ -97,6 +98,7 @@ export const ProofReview: React.FC = () => {
 
         // Save to DB
         await MockService.updateApplication(app.id, { taskProofs: newTaskProofs, proofStatuses: newStatuses });
+        await loadData();
     };
 
     // Helper to find challenge details

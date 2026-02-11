@@ -17,32 +17,33 @@ export const ApplicationDetail: React.FC = () => {
   const [emailBody, setEmailBody] = useState('');
   const [showEmailForm, setShowEmailForm] = useState(false);
 
+  const loadData = async () => {
+    if (!id) return;
+    const [appData, configData] = await Promise.all([
+        MockService.getApplicationById(id),
+        MockService.getClassConfig()
+    ]);
+    
+    setClassConfig(configData);
+
+    if (appData) {
+      setApp(appData);
+      setAdminNote(appData.adminNote || '');
+      if (appData.status === ApplicationStatus.APPROVED) {
+        const codes = await MockService.getCodes();
+        const code = codes.find(c => c.applicationId === appData.id);
+        if (code) setExistingCode(code);
+      }
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
     if (!MockService.isAdminAuthenticated()) {
       navigate('/admin/login');
       return;
     }
-    const load = async () => {
-      if (!id) return;
-      const [appData, configData] = await Promise.all([
-          MockService.getApplicationById(id),
-          MockService.getClassConfig()
-      ]);
-      
-      setClassConfig(configData);
-
-      if (appData) {
-        setApp(appData);
-        setAdminNote(appData.adminNote || '');
-        if (appData.status === ApplicationStatus.APPROVED) {
-          const codes = await MockService.getCodes();
-          const code = codes.find(c => c.applicationId === appData.id);
-          if (code) setExistingCode(code);
-        }
-      }
-      setLoading(false);
-    };
-    load();
+    loadData();
   }, [id, navigate]);
 
   const handleSaveNote = async () => {
@@ -50,7 +51,7 @@ export const ApplicationDetail: React.FC = () => {
       setProcessing(true);
       try {
           await MockService.updateApplication(app.id, { adminNote });
-          setApp(prev => prev ? ({ ...prev, adminNote }) : null);
+          await loadData();
           alert("Note saved!");
       } catch (e) {
           alert("Failed to save note");
@@ -65,6 +66,7 @@ export const ApplicationDetail: React.FC = () => {
     try {
         const res = await MockService.sendEmail(app.email, emailSubject, emailBody.replace(/\n/g, '<br>'));
         if (res.success) {
+            await loadData();
             alert("Email sent successfully!");
             setShowEmailForm(false);
             setEmailSubject('');
@@ -87,11 +89,11 @@ export const ApplicationDetail: React.FC = () => {
       await MockService.updateApplicationStatus(app.id, status);
       
       if (status === ApplicationStatus.APPROVED) {
-        const newCode = await MockService.generateCode(app.id, app.email);
-        setGeneratedCode(newCode.code);
-        setApp(prev => prev ? ({ ...prev, status }) : null);
-        alert(`Application Approved!\n\nEmail sent to ${app.email} with code: ${newCode.code}`);
+        await MockService.generateCode(app.id, app.email);
+        await loadData();
+        alert(`Application Approved!\n\nEmail sent to ${app.email}`);
       } else {
+        await loadData();
         navigate('/admin/applications');
       }
     } catch (e) {

@@ -149,6 +149,7 @@ export const AdminDashboard: React.FC = () => {
             setSelectedIds(new Set());
             setEmailSubject('');
             setEmailBody('');
+            await loadData();
         } else {
             alert("Failed to send: " + (res.errors ? res.errors.join('\n') : "Unknown error"));
         }
