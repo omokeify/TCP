@@ -297,7 +297,7 @@ export const MockService = {
 
   getCapacityStats: async (): Promise<{ capacity: number; approved: number; remaining: number }> => {
     const config = await MockService.getClassConfig();
-    const apps = await MockService.getApplications();
+    const apps = await MockService.getApplications(true); // Force refresh to get latest from admin
     const approved = apps.filter(a => a.status === ApplicationStatus.APPROVED).length;
     const capacity = config.capacity || 50;
     

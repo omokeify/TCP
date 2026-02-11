@@ -47,6 +47,7 @@ export const ClassPortal: React.FC = () => {
   const [application, setApplication] = useState<Application | null>(null);
   const [leaderboard, setLeaderboard] = useState<{name: string, xp: number, avatar: string}[]>([]);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [stats, setStats] = useState<{ capacity: number; approved: number; remaining: number } | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -108,6 +109,9 @@ export const ClassPortal: React.FC = () => {
             questSets: DEFAULT_CLASS_INFO.questSets
         };
         setClassConfig(mergedConfig);
+        
+        // Load Real Stats from Admin
+        MockService.getCapacityStats().then(setStats);
 
         // Load Application for Admin Note
         if (code) {
@@ -327,19 +331,12 @@ export const ClassPortal: React.FC = () => {
                     <span className="material-icons-outlined text-[16px] leading-none">verified</span>
                     Invite Code Redeemed
                 </div>
-                {classConfig.stats && classConfig.capacity && (
+                {stats && (
                     <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/50 text-[var(--primary)] rounded-full text-xs font-bold border border-[var(--primary)]/10 backdrop-blur-sm">
                         <span className="material-icons-outlined text-[16px] leading-none">group</span>
-                        {classConfig.stats.approved} of {classConfig.capacity} spots filled
+                        {stats.approved} of {stats.capacity} spots filled
                     </div>
                 )}
-                <button 
-                    onClick={() => alert("✅ Browser: Supported\n✅ Network: Online\n✅ Zoom: Reachable\n\nYou are ready for class! See you inside.")}
-                    className="inline-flex items-center gap-2 px-4 py-1.5 bg-white text-[var(--primary)] rounded-full text-xs font-bold border border-[var(--primary)]/10 hover:bg-[var(--primary)] hover:text-white transition-colors"
-                >
-                    <span className="material-icons-outlined text-[16px] leading-none">speed</span>
-                    Test Access
-                </button>
             </div>
 
             {application?.adminNote && (
@@ -516,53 +513,42 @@ export const ClassPortal: React.FC = () => {
                                         </div>
                                     </div>
 
-                                <div className="bg-[var(--primary)] text-white rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl shadow-[var(--primary)]/20">
-                                    <div className="flex items-center gap-4 w-full md:w-auto">
-                                        <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center shrink-0">
-                                            <span className="material-icons-outlined text-white">videocam</span>
-                                        </div>
-                                        <div className="overflow-hidden">
-                                            <p className="text-xs font-medium text-white/60">Meeting Location</p>
-                                            <p className="text-xl font-bold text-white whitespace-normal break-words">
-                                                {isLink(session.location) ? 'Live via Zoom/Meet' : (session.location || 'Online')}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                                        {isLink(session.location) && (
-                                            <>
-                                            <a 
-                                                href={session.location} 
-                                                target="_blank" 
-                                                rel="noreferrer"
-                                                className="px-8 py-4 bg-[var(--accent)] text-[var(--primary)] rounded-2xl font-bold text-center hover:scale-105 transition-transform active:scale-95 whitespace-nowrap"
-                                            >
-                                                Join Meeting
-                                            </a>
-                                            <button
-                                                onClick={() => window.open(session.location, '_blank')}
-                                                className="px-6 py-4 bg-white/10 text-white rounded-2xl font-bold hover:bg-white/20 transition-colors flex items-center gap-2 whitespace-nowrap"
-                                                title="Check if link works"
-                                            >
-                                                <span className="material-icons-outlined text-sm">wifi_tethering</span>
-                                                Test Access
-                                            </button>
-                                            </>
-                                        )}
-                                        {hasCalendar && (
-                                            <div className="flex gap-2 justify-center w-full sm:w-auto">
-                                                <button 
-                                                    onClick={() => handleGoogleCalendar(session)}
-                                                    className="px-6 py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl transition-colors flex items-center gap-2 font-bold whitespace-nowrap flex-1 sm:flex-none justify-center"
-                                                    title="Add to Google Calendar"
-                                                >
-                                                    <span className="material-icons-outlined text-sm">event</span>
-                                                    <span>Google Calendar</span>
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
+                                <div className="bg-[var(--primary)] text-white rounded-[2rem] p-6 sm:p-8 flex flex-col xl:flex-row items-center justify-between gap-6 xl:gap-8 shadow-xl shadow-[var(--primary)]/20 relative">
+                                     <div className="flex items-center gap-4 sm:gap-5 w-full xl:w-auto">
+                                         <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/10 rounded-2xl flex items-center justify-center shrink-0 border border-white/10 shadow-inner">
+                                             <span className="material-icons-outlined text-white text-2xl sm:text-3xl">videocam</span>
+                                         </div>
+                                         <div className="flex flex-col gap-0.5 sm:gap-1 min-w-0">
+                                             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Meeting Location</p>
+                                             <p className="text-lg sm:text-2xl font-extrabold text-white leading-tight truncate">
+                                                 {isLink(session.location) ? 'Live via Zoom/Meet' : (session.location || 'Online')}
+                                             </p>
+                                         </div>
+                                     </div>
+                                     
+                                     <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 w-full xl:w-auto justify-center xl:justify-end">
+                                         {isLink(session.location) && (
+                                             <a 
+                                                 href={session.location} 
+                                                 target="_blank" 
+                                                 rel="noreferrer"
+                                                 className="px-6 sm:px-8 py-3.5 sm:py-4 bg-[var(--accent)] text-[var(--primary)] rounded-2xl font-bold text-center hover:scale-[1.03] active:scale-[0.98] transition-all whitespace-nowrap shadow-xl shadow-[var(--accent)]/20 flex-1 sm:flex-none flex items-center justify-center gap-2"
+                                             >
+                                                 Join Meeting
+                                                 <span className="material-icons-outlined text-sm">open_in_new</span>
+                                             </a>
+                                         )}
+                                         {hasCalendar && (
+                                             <button 
+                                                 onClick={() => handleGoogleCalendar(session)}
+                                                 className="px-6 sm:px-8 py-3.5 sm:py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-bold text-center hover:scale-[1.03] active:scale-[0.98] transition-all border border-white/20 whitespace-nowrap flex items-center justify-center gap-2 flex-1 sm:flex-none"
+                                                 title="Add to Google Calendar"
+                                             >
+                                                 <span className="material-icons-outlined text-sm">event</span>
+                                                 Google Calendar
+                                             </button>
+                                         )}
+                                     </div>
                                 </div>
                             </div>
                         );
