@@ -10,11 +10,29 @@ const APPS_KEY = 'blink_applications';
 const CODES_KEY = 'blink_codes';
 const AUTH_KEY = 'blink_admin_auth';
 // Updated key version to force refresh of config on devices with old cached state
-const CONFIG_KEY = 'blink_class_config_v12';
+const CONFIG_KEY = 'blink_class_config_v13';
 const DB_URL_KEY = 'blink_db_url';
 
 // Helper to simulate delay
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Helper for robust fetch with retry
+const fetchWithRetry = async (url: string, options?: RequestInit, retries = 3, backoff = 500): Promise<Response> => {
+  try {
+    const res = await fetch(url, options);
+    // If 5xx error, throw to trigger retry (unless 500 is valid for app logic, but usually transient)
+    // Google Apps Script might return 500 for internal errors
+    if (!res.ok && res.status >= 500) {
+      throw new Error(`Server error: ${res.status}`);
+    }
+    return res;
+  } catch (err) {
+    if (retries <= 0) throw err;
+    console.warn(`Fetch failed, retrying (${retries} left)...`, err);
+    await delay(backoff);
+    return fetchWithRetry(url, options, retries - 1, backoff * 2);
+  }
+};
 
 // --- Caching System ---
 class SimpleCache<T> {
@@ -82,11 +100,11 @@ export const MockService = {
     if (!url) throw new Error("No DB URL Configured");
     
     if (method === 'GET') {
-       const res = await fetch(`${url}?action=${action}`);
+       const res = await fetchWithRetry(`${url}?action=${action}`);
        return await res.json();
     } else {
        // Google Apps Script requires text/plain to avoid preflight OPTIONS check issues
-       const res = await fetch(url, {
+       const res = await fetchWithRetry(url, {
          method: 'POST',
          body: JSON.stringify({ action, data }),
          headers: {

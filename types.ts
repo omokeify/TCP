@@ -141,8 +141,8 @@ export const DEFAULT_CLASS_INFO: ClassConfig = {
   title: "Vibe Coding Class",
   description: "The Builder Mindset: How AI Actually Builds & What you're Doing Wrong.\n\nINPUT → LOGIC → DATA → OUTPUT for every app",
   acceptingApplications: true,
-  date: "October 15, 2030",
-  time: "2:00 PM EST",
+  date: "February 12, 2026",
+  time: "8:00 PM EST",
   location: "Google Meet (Link sent upon acceptance)",
   instructor: "Fredy",
   extraNotes: "Additional info visible only to accepted students in the portal.",
@@ -151,8 +151,8 @@ export const DEFAULT_CLASS_INFO: ClassConfig = {
      {
         id: "default-1",
         title: "Main Session",
-        date: "October 15, 2030",
-        time: "2:00 PM EST",
+        date: "February 12, 2026",
+        time: "8:00 PM EST",
         location: "Google Meet (Link sent upon acceptance)",
         instructor: "Fredy"
      }
@@ -171,8 +171,8 @@ export const DEFAULT_CLASS_INFO: ClassConfig = {
          {
             id: "q1-s1",
             title: "Live Workshop",
-            date: "October 15, 2030",
-            time: "2:00 PM EST",
+            date: "February 12, 2026",
+            time: "8:00 PM EST",
             location: "Google Meet",
             instructor: "Fredy"
          }

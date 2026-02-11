@@ -97,7 +97,16 @@ export const ClassPortal: React.FC = () => {
 
     const loadConfig = async () => {
         const config = await MockService.getClassConfig();
-        const mergedConfig = { ...DEFAULT_CLASS_INFO, ...config };
+        // Force local defaults for critical schedule info to ensure the update takes precedence
+        // over potentially stale remote data
+        const mergedConfig = { 
+            ...DEFAULT_CLASS_INFO, 
+            ...config,
+            date: DEFAULT_CLASS_INFO.date,
+            time: DEFAULT_CLASS_INFO.time,
+            sessions: DEFAULT_CLASS_INFO.sessions,
+            questSets: DEFAULT_CLASS_INFO.questSets
+        };
         setClassConfig(mergedConfig);
 
         // Load Application for Admin Note
