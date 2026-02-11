@@ -119,8 +119,8 @@ export const AdminDashboard: React.FC = () => {
   const applyTemplate = (type: string) => {
     const templates: Record<string, { subject: string, body: string }> = {
         "reminder": {
-            subject: "Reminder: Upcoming Class Assignment",
-            body: "Hi there,\n\nThis is a friendly reminder to complete your assignment before the next session.\n\nYou can access the materials in the Class Portal.\n\nBest regards,\nThe Team"
+            subject: "Reminder: TCP Vibe Coding Class Tomorrow!",
+            body: "Hi there,\n\nFriendly reminder that our TCP Vibe Coding Class is happening tomorrow! \n\nPlease make sure you are ready and have your environment set up.\n\nYou can add the event to your calendar here:\nhttps://calendar.app.google/haLz7cFBtTWtFxKD8\n\nSee you there!\nBest regards,\nThe TCP Team"
         },
         "start": {
             subject: "Class Starting Soon!",
