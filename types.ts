@@ -112,6 +112,7 @@ export interface ClassConfig {
   nameLabel?: string;
   emailLabel?: string;
   whyJoinLabel?: string;
+  mandatoryOnboarding?: boolean;
   stats?: {
     approved: number;
     total: number;

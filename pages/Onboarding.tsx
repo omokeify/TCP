@@ -22,6 +22,8 @@ export const Onboarding: React.FC = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [config, setConfig] = useState<any>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<Partial<MemberOnboarding>>({
     fullName: '',
     email: '',
@@ -41,6 +43,34 @@ export const Onboarding: React.FC = () => {
     hasNetworkAccess: 'No'
   });
 
+  React.useEffect(() => {
+    MockService.getClassConfig().then(setConfig);
+  }, []);
+
+  const validateStep = (step: number) => {
+    if (!config?.mandatoryOnboarding) return true;
+    
+    const newErrors: Record<string, string> = {};
+    if (step === 0) {
+      if (!formData.fullName) newErrors.fullName = 'Required';
+      if (!formData.email) newErrors.email = 'Required';
+      if (!formData.telegramUsername) newErrors.telegramUsername = 'Required';
+    } else if (step === 1) {
+      if (!formData.country) newErrors.country = 'Required';
+      if (!formData.stateRegion) newErrors.stateRegion = 'Required';
+    } else if (step === 2) {
+      if (!formData.howLongInTcc) newErrors.howLongInTcc = 'Required';
+      if (!formData.joinTccDate) newErrors.joinTccDate = 'Required';
+    } else if (step === 3) {
+      if (!formData.inspiration) newErrors.inspiration = 'Required';
+    } else if (step === 4) {
+      if (!formData.skills?.length) newErrors.skills = 'Select at least one';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -57,6 +87,8 @@ export const Onboarding: React.FC = () => {
   };
 
   const nextStep = () => {
+    if (!validateStep(currentStep)) return;
+
     if (currentStep < SECTIONS.length - 1) {
       setCurrentStep(prev => prev + 1);
       window.scrollTo(0, 0);
@@ -89,7 +121,7 @@ export const Onboarding: React.FC = () => {
   const progress = ((currentStep + 1) / SECTIONS.length) * 100;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-12">
+    <div className="w-full max-w-3xl mx-auto px-4 py-12">
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold text-[#3B472F] mb-2">Member Intake Form</h1>
         <p className="text-[#686868]">Welcome to The Compass Community (TCC)</p>
@@ -109,7 +141,7 @@ export const Onboarding: React.FC = () => {
         </div>
       </div>
 
-      <GlassCard className="p-8">
+      <GlassCard className="p-8 w-full">
         {currentStep === 0 && (
           <div className="space-y-6 animate-fadeIn">
             <h2 className="text-xl font-bold text-[#3B472F] border-b border-[#3B472F]/10 pb-2">Basic Information</h2>
@@ -117,28 +149,31 @@ export const Onboarding: React.FC = () => {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-bold text-[#3B472F] mb-1">Full Name (First & Last)</label>
-                <input 
-                  type="text" name="fullName" value={formData.fullName || ''} onChange={handleInputChange}
-                  className="w-full p-3 rounded-xl border border-[#FFFA7E] bg-white/50 focus:outline-none focus:ring-2 focus:ring-[#3B472F]/20"
-                  placeholder="John Doe"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-[#3B472F] mb-1">Email Address</label>
-                <input 
-                  type="email" name="email" value={formData.email || ''} onChange={handleInputChange}
-                  className="w-full p-3 rounded-xl border border-[#FFFA7E] bg-white/50 focus:outline-none focus:ring-2 focus:ring-[#3B472F]/20"
-                  placeholder="john@example.com"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-[#3B472F] mb-1">Telegram Username</label>
-                <input 
-                  type="text" name="telegramUsername" value={formData.telegramUsername || ''} onChange={handleInputChange}
-                  className="w-full p-3 rounded-xl border border-[#FFFA7E] bg-white/50 focus:outline-none focus:ring-2 focus:ring-[#3B472F]/20"
-                  placeholder="@username"
-                />
-              </div>
+                  <input 
+                    type="text" name="fullName" value={formData.fullName || ''} onChange={handleInputChange}
+                    className={`w-full p-3 rounded-xl border ${errors.fullName ? 'border-red-500' : 'border-[#FFFA7E]'} bg-white/50 focus:outline-none focus:ring-2 focus:ring-[#3B472F]/20`}
+                    placeholder="John Doe"
+                  />
+                  {errors.fullName && <p className="text-red-500 text-[10px] mt-1 font-bold italic">{errors.fullName}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-[#3B472F] mb-1">Email Address</label>
+                  <input 
+                    type="email" name="email" value={formData.email || ''} onChange={handleInputChange}
+                    className={`w-full p-3 rounded-xl border ${errors.email ? 'border-red-500' : 'border-[#FFFA7E]'} bg-white/50 focus:outline-none focus:ring-2 focus:ring-[#3B472F]/20`}
+                    placeholder="john@example.com"
+                  />
+                  {errors.email && <p className="text-red-500 text-[10px] mt-1 font-bold italic">{errors.email}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-[#3B472F] mb-1">Telegram Username</label>
+                  <input 
+                    type="text" name="telegramUsername" value={formData.telegramUsername || ''} onChange={handleInputChange}
+                    className={`w-full p-3 rounded-xl border ${errors.telegramUsername ? 'border-red-500' : 'border-[#FFFA7E]'} bg-white/50 focus:outline-none focus:ring-2 focus:ring-[#3B472F]/20`}
+                    placeholder="@username"
+                  />
+                  {errors.telegramUsername && <p className="text-red-500 text-[10px] mt-1 font-bold italic">{errors.telegramUsername}</p>}
+                </div>
               <div>
                 <label className="block text-sm font-bold text-[#3B472F] mb-1">Discord Username</label>
                 <input 
@@ -167,7 +202,7 @@ export const Onboarding: React.FC = () => {
                 <label className="block text-sm font-bold text-[#3B472F] mb-1">Country</label>
                 <select 
                   name="country" value={formData.country || ''} onChange={handleInputChange}
-                  className="w-full p-3 rounded-xl border border-[#FFFA7E] bg-white/50 focus:outline-none focus:ring-2 focus:ring-[#3B472F]/20"
+                  className={`w-full p-3 rounded-xl border ${errors.country ? 'border-red-500' : 'border-[#FFFA7E]'} bg-white/50 focus:outline-none focus:ring-2 focus:ring-[#3B472F]/20`}
                 >
                   <option value="">Select Country</option>
                   <option value="Nigeria">Nigeria</option>
@@ -176,13 +211,15 @@ export const Onboarding: React.FC = () => {
                   <option value="Canada">Canada</option>
                   {/* More countries would be here */}
                 </select>
+                {errors.country && <p className="text-red-500 text-[10px] mt-1 font-bold italic">{errors.country}</p>}
               </div>
               <div>
                 <label className="block text-sm font-bold text-[#3B472F] mb-1">State/Region</label>
                 <input 
                   type="text" name="stateRegion" value={formData.stateRegion || ''} onChange={handleInputChange}
-                  className="w-full p-3 rounded-xl border border-[#FFFA7E] bg-white/50 focus:outline-none focus:ring-2 focus:ring-[#3B472F]/20"
+                  className={`w-full p-3 rounded-xl border ${errors.stateRegion ? 'border-red-500' : 'border-[#FFFA7E]'} bg-white/50 focus:outline-none focus:ring-2 focus:ring-[#3B472F]/20`}
                 />
+                {errors.stateRegion && <p className="text-red-500 text-[10px] mt-1 font-bold italic">{errors.stateRegion}</p>}
               </div>
               <div>
                 <label className="block text-sm font-bold text-[#3B472F] mb-1">Marital Status</label>
@@ -282,7 +319,7 @@ export const Onboarding: React.FC = () => {
                     'Community Management', 'Graphic Design', 'Development (Frontend/Backend/Web3)',
                     'Marketing/Growth', 'Data Analysis'
                   ].map(skill => (
-                    <label key={skill} className="flex items-center gap-3 p-3 rounded-xl border border-[#FFFA7E] bg-white/30 cursor-pointer hover:bg-white/50 transition-colors">
+                    <label key={skill} className={`flex items-center gap-3 p-3 rounded-xl border ${errors.skills ? 'border-red-500/50' : 'border-[#FFFA7E]'} bg-white/30 cursor-pointer hover:bg-white/50 transition-colors`}>
                       <input 
                         type="checkbox" checked={formData.skills?.includes(skill)} 
                         onChange={() => handleCheckboxChange('skills', skill)}
@@ -292,6 +329,7 @@ export const Onboarding: React.FC = () => {
                     </label>
                   ))}
                 </div>
+                {errors.skills && <p className="text-red-500 text-[10px] mt-1 font-bold italic">{errors.skills}</p>}
               </div>
               <div>
                 <label className="block text-sm font-bold text-[#3B472F] mb-1">Other Skills</label>

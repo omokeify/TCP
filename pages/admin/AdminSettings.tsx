@@ -333,6 +333,27 @@ export const AdminSettings: React.FC = () => {
           </label>
        </div>
 
+        {/* Mandatory Onboarding Toggle */}
+        <div className="bg-white dark:bg-white/5 p-6 rounded-2xl shadow-sm border border-chalk dark:border-white/10 flex items-center justify-between">
+           <div>
+               <h2 className="text-lg font-bold text-primary dark:text-white">Mandatory Onboarding</h2>
+               <p className="text-sm text-ash dark:text-chalk/60">
+                   {config.mandatoryOnboarding 
+                     ? "Enforce all fields in the Member Intake form. Users cannot skip required sections." 
+                     : "Flexible Onboarding. Users can skip fields and submit partial data."}
+               </p>
+           </div>
+           <label className="relative inline-flex items-center cursor-pointer">
+             <input 
+                 type="checkbox" 
+                 className="sr-only peer"
+                 checked={!!config.mandatoryOnboarding}
+                 onChange={(e) => setConfig({ ...config, mandatoryOnboarding: e.target.checked })}
+             />
+             <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
+           </label>
+        </div>
+
       {/* Quest Sets (Sessions) Config */}
       <div className="bg-white dark:bg-white/5 p-6 rounded-2xl shadow-sm border border-chalk dark:border-white/10">
         <div className="flex justify-between items-center mb-6">
