@@ -262,3 +262,39 @@ export const DEFAULT_CLASS_INFO: ClassConfig = {
     }
   ]
 };
+
+export interface MemberOnboarding {
+  id: string;
+  fullName: string;
+  email: string;
+  telegramUsername: string;
+  discordUsername: string;
+  xUsername: string;
+  country: string;
+  stateRegion: string;
+  maritalStatus: 'Single' | 'Married' | 'Prefer not to say';
+  ageRange: 'Below 20' | '20–30' | '30–40' | '40 & above';
+  howLongInTcc: string;
+  joinTccDate: string; // ISO date or MM-YYYY
+  startWeb3JourneyDate: string; // ISO date or MM-YYYY
+  inspiration: string;
+  expectations: string;
+  skills: string[]; // Trading, Research, etc.
+  otherSkills?: string;
+  skillLevel: number; // 1-5
+  knowledgeableTools: string;
+  hasCertifications: 'Yes' | 'No';
+  certificationsList?: string;
+  hasPortfolio: 'Yes' | 'No';
+  portfolioLink?: string;
+  workedWithWeb3Brand: 'Yes' | 'No';
+  web3Role?: string;
+  web3Brands?: string;
+  contributionAreas: string[];
+  contributionCapacity: string;
+  currentStatus: 'Job Hunting' | 'Freelancing' | 'Learning' | 'Building';
+  openToTeaching: 'Yes' | 'No' | 'Maybe';
+  hasNetworkAccess: 'Yes' | 'No';
+  networkDescription?: string;
+  submittedAt: string;
+}

@@ -12,6 +12,7 @@ const AUTH_KEY = 'tcp_admin_auth';
 // Updated key version to force refresh of config on devices with old cached state
 const CONFIG_KEY = 'tcp_class_config_v14';
 const DB_URL_KEY = 'tcp_db_url';
+const ONBOARDING_KEY = 'tcp_member_onboarding';
 
 // Helper to simulate delay
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -82,6 +83,7 @@ class SimpleCache<T> {
 
 const configCache = new SimpleCache<ClassConfig>(10 * 60 * 1000); // 10 mins for config
 const appCache = new SimpleCache<Application[]>(2 * 60 * 1000); // 2 mins for apps
+const memberCache = new SimpleCache<any[]>(2 * 60 * 1000); // 2 mins for members
 
 export const MockService = {
   // --- Database Configuration ---
@@ -496,5 +498,52 @@ export const MockService = {
     
     console.log(`[MOCK REMINDER SERVICE] Sending reminders to ${usedCodes.length} users.`);
     return { sent: usedCodes.length };
+  },
+
+  // --- Member Onboarding ---
+  
+  getMemberOnboarding: async (forceRefresh = false): Promise<any[]> => {
+    if (!forceRefresh) {
+        const cached = memberCache.get('all_members');
+        if (cached) return cached;
+    }
+
+    const dbUrl = MockService.getDbUrl();
+    if (dbUrl) {
+       try {
+         const data = await MockService.callScript('get_members', 'GET');
+         memberCache.set('all_members', data);
+         return data;
+       } catch (e) {
+         console.warn("Failed to fetch remote members, falling back to local:", e);
+       }
+    }
+
+    await delay(500);
+    const stored = localStorage.getItem(ONBOARDING_KEY);
+    return stored ? JSON.parse(stored) : [];
+  },
+
+  submitMemberOnboarding: async (data: any): Promise<any> => {
+    const newMember = {
+      ...data,
+      id: Math.random().toString(36).substr(2, 9),
+      submittedAt: new Date().toISOString(),
+    };
+
+    const dbUrl = MockService.getDbUrl();
+    if (dbUrl) {
+       try {
+         const res = await MockService.callScript('submit_member', 'POST', newMember);
+         return res.member || newMember;
+       } catch (e) {
+         console.warn("Failed to submit member remotely, falling back to local:", e);
+       }
+    }
+
+    await delay(800);
+    const members = await MockService.getMemberOnboarding();
+    localStorage.setItem(ONBOARDING_KEY, JSON.stringify([newMember, ...members]));
+    return newMember;
   }
 };

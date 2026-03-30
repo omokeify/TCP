@@ -237,7 +237,14 @@ export const AdminDashboard: React.FC = () => {
           <h1 className="text-3xl font-bold text-primary dark:text-accent">Application Management</h1>
           <p className="text-ash dark:text-chalk/60 mt-1">Review and approve pending requests for class access.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 text-sm">
+          <button 
+             onClick={() => navigate('/admin/members')}
+             className="flex items-center gap-2 px-4 py-2 bg-primary/20 text-primary dark:text-accent border-2 border-primary/20 rounded-lg font-bold hover:bg-primary/30 transition-all"
+          >
+             <span className="material-icons-outlined text-sm">group</span>
+             Member Directory
+          </button>
           <button 
              onClick={handleBatchApprove}
              disabled={batchProcessing || stats.pending === 0}
