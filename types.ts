@@ -142,6 +142,7 @@ export const DEFAULT_CLASS_INFO: ClassConfig = {
   title: "Vibe Coding Class",
   description: "The Builder Mindset: How AI Actually Builds & What you're Doing Wrong.\n\nINPUT → LOGIC → DATA → OUTPUT for every app",
   acceptingApplications: true,
+  mandatoryOnboarding: false,
   date: "February 12, 2026",
   time: "8:00 PM EST",
   location: "Google Meet",

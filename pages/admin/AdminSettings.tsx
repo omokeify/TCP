@@ -93,7 +93,7 @@ export const AdminSettings: React.FC = () => {
       const newQuestSet: QuestSet = {
           id: Math.random().toString(36).substr(2, 9),
           title: "New Session / Quest Set",
-          description: "Description of the session content",
+          description: "The Builder Mindset: How AI Actually Builds & What you're Doing Wrong.\n\nINPUT → LOGIC → DATA → OUTPUT for every app",
           category: "General",
           level: "Beginner",
           status: "draft",
@@ -333,25 +333,66 @@ export const AdminSettings: React.FC = () => {
           </label>
        </div>
 
-        {/* Mandatory Onboarding Toggle */}
-        <div className="bg-white dark:bg-white/5 p-6 rounded-2xl shadow-sm border border-chalk dark:border-white/10 flex items-center justify-between">
-           <div>
-               <h2 className="text-lg font-bold text-primary dark:text-white">Mandatory Onboarding</h2>
-               <p className="text-sm text-ash dark:text-chalk/60">
-                   {config.mandatoryOnboarding 
-                     ? "Enforce all fields in the Member Intake form. Users cannot skip required sections." 
-                     : "Flexible Onboarding. Users can skip fields and submit partial data."}
-               </p>
+        {/* Member Intake Form Settings */}
+        <div className="bg-white dark:bg-white/5 p-6 rounded-2xl shadow-sm border border-chalk dark:border-white/10">
+           <div className="flex items-center justify-between mb-4">
+               <div>
+                   <h2 className="text-xl font-bold text-primary dark:text-white flex items-center gap-2">
+                       <span className="material-icons-outlined text-accent text-2xl">person_add</span>
+                       Member Intake Form
+                   </h2>
+                   <p className="text-sm text-ash dark:text-chalk/60">Configure the comprehensive onboarding form for approved members.</p>
+               </div>
+               <div className="flex items-center gap-3 bg-chalk/20 dark:bg-white/5 px-4 py-2 rounded-xl border border-chalk dark:border-white/10">
+                  <span className="text-xs font-bold text-primary/60 dark:text-chalk/40 uppercase tracking-widest">Enforce Mandatory</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                        type="checkbox" 
+                        className="sr-only peer"
+                        checked={!!config.mandatoryOnboarding}
+                        onChange={(e) => setConfig({ ...config, mandatoryOnboarding: e.target.checked })}
+                    />
+                    <div className="w-12 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                  </label>
+               </div>
            </div>
-           <label className="relative inline-flex items-center cursor-pointer">
-             <input 
-                 type="checkbox" 
-                 className="sr-only peer"
-                 checked={!!config.mandatoryOnboarding}
-                 onChange={(e) => setConfig({ ...config, mandatoryOnboarding: e.target.checked })}
-             />
-             <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
-           </label>
+           
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-chalk dark:border-white/5">
+                <div className="p-4 bg-accent/5 dark:bg-white/5 rounded-xl border border-accent/20">
+                    <h3 className="text-sm font-bold text-primary dark:text-accent mb-1 flex items-center gap-2">
+                        <span className="material-icons-outlined text-sm">visibility</span>
+                        Live Preview URL
+                    </h3>
+                    <p className="text-xs text-ash/60 dark:text-chalk/40 mb-3">Copy this link to send to approved members.</p>
+                    <div className="flex gap-2">
+                        <input 
+                            readOnly
+                            value={`${window.location.origin}/onboard`}
+                            className="flex-1 bg-white dark:bg-black/20 border border-chalk dark:border-white/10 rounded px-2 py-1 text-xs text-ash/60 font-mono"
+                        />
+                        <button 
+                            onClick={() => {
+                                navigator.clipboard.writeText(`${window.location.origin}/onboard`);
+                                alert('Link copied to clipboard!');
+                            }}
+                            className="p-1 px-2 bg-primary text-white text-[10px] rounded hover:bg-primary/80 transition-colors uppercase font-bold"
+                        >
+                            Copy
+                        </button>
+                    </div>
+                </div>
+                <div className="p-4 bg-ash/5 dark:bg-white/5 rounded-xl border border-chalk dark:border-white/5">
+                    <h3 className="text-sm font-bold text-primary dark:text-chalk/80 mb-1 flex items-center gap-2">
+                        <span className="material-icons-outlined text-sm">settings_input_component</span>
+                        Form Status
+                    </h3>
+                    <p className="text-xs text-ash/60 dark:text-chalk/40 mb-3">The form is currently live for all users with the link.</p>
+                    <span className="inline-flex items-center gap-1.5 py-1 px-3 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-600 animate-pulse"></span>
+                      Active & Accepting Responses
+                    </span>
+                </div>
+           </div>
         </div>
 
       {/* Quest Sets (Sessions) Config */}

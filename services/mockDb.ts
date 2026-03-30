@@ -172,6 +172,11 @@ export const MockService = {
     return stored ? JSON.parse(stored) : DEFAULT_CLASS_INFO;
   },
 
+  getClassConfigSync: (): ClassConfig => {
+    const stored = localStorage.getItem(CONFIG_KEY);
+    return stored ? JSON.parse(stored) : DEFAULT_CLASS_INFO;
+  },
+
   updateClassConfig: async (config: ClassConfig): Promise<void> => {
     const dbUrl = MockService.getDbUrl();
     

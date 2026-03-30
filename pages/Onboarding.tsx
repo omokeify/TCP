@@ -22,7 +22,7 @@ export const Onboarding: React.FC = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [config, setConfig] = useState<any>(null);
+  const [config, setConfig] = useState<any>(MockService.getClassConfigSync ? MockService.getClassConfigSync() : null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<Partial<MemberOnboarding>>({
     fullName: '',
