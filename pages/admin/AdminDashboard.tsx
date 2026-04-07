@@ -296,20 +296,38 @@ export const AdminDashboard: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-white dark:bg-white/5 p-6 rounded-2xl shadow-sm border border-chalk dark:border-white/10">
           <p className="text-ash dark:text-chalk/60 text-sm font-medium">Total Submissions</p>
-          <p className="text-3xl font-bold text-primary dark:text-white mt-2">{stats.total}</p>
+          <p className="text-3xl font-bold text-[#3B472F] dark:text-white mt-2">{stats.total}</p>
         </div>
-        <div className="bg-accent/20 dark:bg-accent/10 p-6 rounded-2xl shadow-sm border border-accent/30">
+        <div className="bg-[#FFFA7E]/20 dark:bg-[#FFFA7E]/10 p-6 rounded-2xl shadow-sm border border-[#FFFA7E]/30">
           <p className="text-ash dark:text-chalk/60 text-sm font-medium">Pending Review</p>
-          <p className="text-3xl font-bold text-primary dark:text-accent mt-2">{stats.pending}</p>
+          <p className="text-3xl font-bold text-[#3B472F] dark:text-[#FFFA7E] mt-2">{stats.pending}</p>
         </div>
-        <div className="bg-eucalyptus/20 dark:bg-eucalyptus/10 p-6 rounded-2xl shadow-sm border border-eucalyptus/30">
+        <div className="bg-green-100 dark:bg-green-900/20 p-6 rounded-2xl shadow-sm border border-green-200 dark:border-green-800/30">
           <p className="text-ash dark:text-chalk/60 text-sm font-medium">Approved Total</p>
-          <p className="text-3xl font-bold text-primary dark:text-eucalyptus mt-2">{stats.approved}</p>
+          <p className="text-3xl font-bold text-[#3B472F] dark:text-green-400 mt-2">{stats.approved}</p>
         </div>
         <div className="bg-red-500/10 dark:bg-red-500/5 p-6 rounded-2xl shadow-sm border border-red-500/20">
           <p className="text-ash dark:text-chalk/60 text-sm font-medium">Rejected Total</p>
-          <p className="text-3xl font-bold text-primary dark:text-red-400 mt-2">{stats.rejected}</p>
+          <p className="text-3xl font-bold text-[#3B472F] dark:text-red-400 mt-2">{stats.rejected}</p>
         </div>
+      </div>
+
+      {/* Recent Onboarding Responses Quick Link */}
+      <div className="mb-8 p-6 bg-gradient-to-r from-[#3B472F] to-[#4a5a3a] rounded-2xl shadow-lg text-white flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+              <span className="material-icons-outlined text-8xl">assignment_ind</span>
+          </div>
+          <div className="relative z-10">
+              <h2 className="text-xl font-bold mb-1">Onboarding Responses</h2>
+              <p className="text-white/70 text-sm max-w-lg">Track and view detailed intake data from approved members who have completed their profile onboarding.</p>
+          </div>
+          <button 
+              onClick={() => navigate('/admin/members')}
+              className="relative z-10 px-6 py-3 bg-[#FFFA7E] text-[#3B472F] rounded-xl font-bold hover:scale-105 transition-all text-sm flex items-center gap-2 whitespace-nowrap"
+          >
+              <span className="material-icons-outlined">open_in_new</span>
+              View All Responses
+          </button>
       </div>
 
       <div className="bg-white dark:bg-white/5 rounded-2xl shadow-sm border border-chalk dark:border-white/10 overflow-hidden">

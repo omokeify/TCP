@@ -47,9 +47,9 @@ export const Access: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-md">
+    <div className="flex flex-col items-center justify-center min-h-[60vh] w-full max-w-md mx-auto px-4">
       <GlassCard title="Enter Class">
-        <p className="text-[#686868] mb-6">
+        <p className="text-[#686868] mb-6 text-center">
           This class is invite-only. Please enter the unique access code sent to your email.
         </p>
         
@@ -57,7 +57,7 @@ export const Access: React.FC = () => {
           <div>
              <input 
               type="text" 
-              className="w-full text-center text-2xl tracking-widest font-mono uppercase px-4 py-4 rounded-xl bg-white/50 border border-transparent focus:border-[#3B472F] focus:bg-white focus:ring-0 transition-all outline-none text-[#3B472F] placeholder-gray-400"
+              className="w-full text-center text-2xl tracking-widest font-mono uppercase px-4 py-4 rounded-xl bg-white/50 border border-transparent focus:border-[#3B472F] focus:bg-white focus:ring-2 focus:ring-[#3B472F]/10 transition-all outline-none text-[#3B472F] placeholder-gray-400"
               placeholder="TCP-XXXXXX"
               value={code}
               onChange={(e) => setCode(e.target.value)}
@@ -72,7 +72,7 @@ export const Access: React.FC = () => {
           )}
 
           {error && (
-            <div className="p-3 rounded-lg bg-red-100 text-red-600 text-sm text-center font-medium animate-pulse">
+            <div className="p-3 rounded-lg bg-red-100/50 text-red-600 text-sm text-center font-medium animate-fadeIn">
               {error}
             </div>
           )}
@@ -80,7 +80,7 @@ export const Access: React.FC = () => {
           <Button 
             type="submit" 
             variant="secondary" 
-            className="w-full justify-center" 
+            className="w-full justify-center h-14 text-lg" 
             isLoading={isChecking}
             disabled={!code || isChecking}
           >

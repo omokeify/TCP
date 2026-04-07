@@ -38,10 +38,9 @@ export const Apply: React.FC = () => {
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
             <Button onClick={() => {
-                const ref = searchParams.get('ref');
-                navigate(ref ? `/quests?ref=${ref}` : '/quests');
+                navigate('/onboarding');
             }} className="flex items-center justify-center gap-2 px-8 py-4 text-lg">
-                <span className="material-icons-outlined">explore</span>
+                <span className="material-icons-outlined">person_add</span>
                 Start Your Journey
             </Button>
         </div>

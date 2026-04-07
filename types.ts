@@ -293,8 +293,9 @@ export interface MemberOnboarding {
   web3Role?: string;
   web3Brands?: string;
   contributionAreas: string[];
+  otherContributionAreas?: string;
   contributionCapacity: string;
-  currentStatus: 'Job Hunting' | 'Freelancing' | 'Learning' | 'Building';
+  currentStatus: 'Job Hunting' | 'Freelancing' | 'Learning' | 'Building' | 'All of the above';
   openToTeaching: 'Yes' | 'No' | 'Maybe';
   hasNetworkAccess: 'Yes' | 'No';
   networkDescription?: string;

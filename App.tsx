@@ -40,7 +40,7 @@ function App() {
             <Route path="/portal" element={<ClassPortal />} />
             <Route path="/quests" element={<QuestBoard />} />
             <Route path="/quests/:questSetId" element={<QuestDetail />} />
-            <Route path="/onboard" element={<Onboarding />} />
+            <Route path="/onboarding" element={<Onboarding />} />
 
             {/* Legacy redirect */}
             <Route path="/content" element={<Navigate to="/portal" replace />} />

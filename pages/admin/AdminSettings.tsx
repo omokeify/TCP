@@ -8,7 +8,9 @@ export const AdminSettings: React.FC = () => {
   const [config, setConfig] = useState<ClassConfig>(DEFAULT_CLASS_INFO);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [dbUrl, setDbUrl] = useState('');
+
+  const [draggedTaskIndex, setDraggedTaskIndex] = useState<number | null>(null);
+  const [expandedQuestIndex, setExpandedQuestIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (!MockService.isAdminAuthenticated()) {
@@ -17,12 +19,10 @@ export const AdminSettings: React.FC = () => {
     }
     const load = async () => {
       const data = await MockService.getClassConfig();
-      // Ensure resources array exists for older configs
       if (!data.resources) {
         data.resources = DEFAULT_CLASS_INFO.resources;
       }
       setConfig(data);
-      setDbUrl(MockService.getDbUrl() || '');
       setLoading(false);
     };
     load();
@@ -31,20 +31,14 @@ export const AdminSettings: React.FC = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      if (dbUrl !== MockService.getDbUrl()) {
-         MockService.setDbUrl(dbUrl);
-      }
       await MockService.updateClassConfig(config);
       alert("Settings saved successfully!");
     } catch (e) {
-      alert("Failed to save settings. If using Google Sheets, check your script URL.");
+      alert("Failed to save settings: " + (e as Error).message);
     } finally {
       setSaving(false);
     }
   };
-
-  const [draggedTaskIndex, setDraggedTaskIndex] = useState<number | null>(null);
-  const [expandedQuestIndex, setExpandedQuestIndex] = useState<number | null>(null);
 
   // --- Task Management (Legacy - Removed) ---
 
@@ -286,31 +280,14 @@ export const AdminSettings: React.FC = () => {
       }
   };
 
-  if (loading) return <div className="p-8 text-primary">Loading settings...</div>;
+  if (loading) return <div className="p-8 text-primary font-bold">Loading Class Data...</div>;
 
   return (
     <div className="space-y-8 pb-20">
       <header>
-         <h1 className="text-3xl font-bold text-primary dark:text-accent">Class Settings</h1>
+         <h1 className="text-3xl font-bold text-[#3B472F] dark:text-[#FFFA7E]">Class Settings</h1>
          <p className="text-ash dark:text-chalk/60 mt-1">Configure public page details, application requirements, and student resources.</p>
       </header>
-
-      {/* Database Connection */}
-      <div className="bg-[#FFFA7E]/20 border border-[#FFFA7E] p-6 rounded-2xl shadow-sm">
-        <h2 className="text-lg font-bold text-primary dark:text-accent mb-2">Google Sheets Database</h2>
-        <p className="text-sm text-ash dark:text-chalk/60 mb-4">
-            To use Google Sheets, deploy the Apps Script provided in the source code (`services/mockDb.ts`) and paste the Web App URL here.
-            Leave empty to use local demo storage.
-        </p>
-        <label className="block text-xs uppercase font-bold text-ash/60 dark:text-chalk/40 mb-1">Apps Script Web App URL</label>
-        <input 
-            type="url" 
-            className="w-full px-4 py-2 bg-white dark:bg-white/5 border border-chalk dark:border-white/10 rounded-lg focus:ring-2 focus:ring-primary dark:focus:ring-accent text-primary dark:text-chalk"
-            value={dbUrl}
-            onChange={(e) => setDbUrl(e.target.value)}
-            placeholder="https://script.google.com/macros/s/..."
-        />
-      </div>
 
        {/* Application Toggle */}
        <div className="bg-white dark:bg-white/5 p-6 rounded-2xl shadow-sm border border-chalk dark:border-white/10 flex items-center justify-between">
