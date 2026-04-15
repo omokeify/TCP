@@ -161,7 +161,8 @@ export const MockService = {
         const { data, error } = await supabase
             .from('member_onboarding')
             .select('*')
-            .order('submitted_at', { ascending: false });
+            .order('submitted_at', { ascending: false })
+            .limit(10000);
         
         if (data) {
             // Transform snake_case to camelCase
@@ -189,12 +190,20 @@ export const MockService = {
                 web3Brands: m.web3_brands,
                 contributionAreas: m.contribution_areas,
                 otherContributionAreas: m.other_contribution_areas,
+                otherContributionAreas: m.other_contribution_areas,
                 contributionCapacity: m.contribution_capacity,
                 currentStatus: m.current_status,
                 openToTeaching: m.open_to_teaching,
                 hasNetworkAccess: m.has_network_access,
                 networkDescription: m.network_description,
-                submittedAt: m.submitted_at
+                submittedAt: m.submitted_at,
+                // Explicitly copy keys that don't need transformation to ensure they are handled if missing
+                email: m.email || '',
+                country: m.country || '',
+                inspiration: m.inspiration || '',
+                expectations: m.expectations || '',
+                skills: Array.isArray(m.skills) ? m.skills : m.skills ? m.skills.split('|') : [],
+                contributionAreas: Array.isArray(m.contribution_areas) ? m.contribution_areas : m.contribution_areas ? m.contribution_areas.split('|') : []
             }));
         }
     }

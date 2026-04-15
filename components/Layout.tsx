@@ -67,12 +67,12 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             </div>
             <nav className="flex-1 px-4 space-y-2 mt-4">
             <Link 
-                to="/admin/applications" 
+                to="/admin/dashboard" 
                 onClick={() => setIsSidebarOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname.includes('applications') ? 'bg-accent text-primary' : 'hover:bg-white/10 text-white'}`}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname.includes('dashboard') ? 'bg-accent text-primary' : 'hover:bg-white/10 text-white'}`}
             >
-                <span className="material-icons-outlined">group</span>
-                Manage Applications
+                <span className="material-icons-outlined">dashboard</span>
+                Community Dashboard
             </Link>
             <Link 
                 to="/admin/members" 

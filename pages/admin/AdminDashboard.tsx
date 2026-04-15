@@ -1,17 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MockService } from '../../services/mockDb';
-import { Application, ApplicationStatus } from '../../types';
+import { MemberOnboarding } from '../../types';
 
 export const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [apps, setApps] = useState<Application[]>([]);
+  const [members, setMembers] = useState<MemberOnboarding[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<ApplicationStatus | 'all'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [isDark, setIsDark] = useState(false);
-  const [reminding, setReminding] = useState(false);
-  const [batchProcessing, setBatchProcessing] = useState(false);
 
   // Email State
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -25,11 +22,9 @@ export const AdminDashboard: React.FC = () => {
   const itemsPerPage = 8;
 
   useEffect(() => {
-    // Check dark mode
     if (document.documentElement.classList.contains('dark')) {
       setIsDark(true);
     }
-
     if (!MockService.isAdminAuthenticated()) {
       navigate('/admin/login');
       return;
@@ -48,62 +43,15 @@ export const AdminDashboard: React.FC = () => {
   };
 
   const loadData = async () => {
-    const data = await MockService.getApplications();
-    setApps(data);
+    const data = await MockService.getMemberOnboarding();
+    const validData = Array.isArray(data) ? data.filter(m => m && typeof m === 'object') : [];
+    setMembers(validData.sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()));
     setLoading(false);
-  };
-
-  const handleStatusUpdate = async (id: string, status: ApplicationStatus) => {
-    const app = apps.find(a => a.id === id);
-    if (!app) return;
-
-    if (window.confirm(`Are you sure you want to ${status === ApplicationStatus.APPROVED ? 'approve' : 'reject'} this application?`)) {
-         await MockService.updateApplicationStatus(id, status);
-        
-        if (status === ApplicationStatus.APPROVED) {
-            await MockService.generateCode(app.id, app.email);
-        }
-        await loadData();
-    }
-  };
-
-  const handleTriggerReminders = async () => {
-    if (!window.confirm("Send reminder emails to all approved users with valid codes?")) return;
-    setReminding(true);
-    try {
-        const res = await MockService.triggerReminders();
-        alert(`Successfully sent reminders to ${res.sent} users.`);
-    } catch (e) {
-        alert("Failed to send reminders.");
-    } finally {
-        setReminding(false);
-    }
-  };
-
-  const handleBatchApprove = async () => {
-    const pendingApps = apps.filter(a => a.status === ApplicationStatus.PENDING);
-    if (pendingApps.length === 0) return;
-
-    if (!window.confirm(`Are you sure you want to approve ALL ${pendingApps.length} pending applications?\n\nThis will generate codes and send emails to everyone.`)) {
-        return;
-    }
-
-    setBatchProcessing(true);
-    try {
-        const ids = pendingApps.map(a => a.id);
-        const res = await MockService.batchApproveApplications(ids);
-        alert(`Successfully approved ${res.count} applications.`);
-        await loadData();
-    } catch (e) {
-        alert("Failed to batch approve: " + (e as Error).message);
-    } finally {
-        setBatchProcessing(false);
-    }
   };
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      setSelectedIds(new Set(filteredApps.map(a => a.id)));
+      setSelectedIds(new Set(filteredMembers.map(m => m.id)));
     } else {
       setSelectedIds(new Set());
     }
@@ -118,13 +66,13 @@ export const AdminDashboard: React.FC = () => {
 
   const applyTemplate = (type: string) => {
     const templates: Record<string, { subject: string, body: string }> = {
-        "reminder": {
-            subject: "Reminder: TCP Vibe Coding Class Tomorrow!",
-            body: "Hi there,\n\nFriendly reminder that our TCP Vibe Coding Class is happening tomorrow! \n\nPlease make sure you are ready and have your environment set up.\n\nYou can add the event to your calendar here:\nhttps://calendar.app.google/haLz7cFBtTWtFxKD8\n\nSee you there!\nBest regards,\nThe TCP Team"
+        "welcome": {
+            subject: "Welcome to The Compass Community!",
+            body: "Hi there,\n\nWe are thrilled to officially welcome you to TCC! \n\nPlease make sure you have introduced yourself in our Telegram and Discord channels.\n\nBest regards,\nThe Community Team"
         },
-        "start": {
-            subject: "Class Starting Soon!",
-            body: "Hello,\n\nWe are starting in 1 hour! Please get your environment ready.\n\nSee you there!"
+        "event": {
+            subject: "Upcoming Community Event Reminder",
+            body: "Hello,\n\nWe are hosting a community space shortly! Please check the latest announcements.\n\nSee you there!"
         },
         "general": {
             subject: "Important Announcement",
@@ -141,7 +89,7 @@ export const AdminDashboard: React.FC = () => {
     if (selectedIds.size === 0) return;
     setSendingEmail(true);
     try {
-        const recipients = apps.filter(a => selectedIds.has(a.id)).map(a => a.email);
+        const recipients = members.filter(m => selectedIds.has(m.id)).map(m => m.email);
         const res = await MockService.batchSendEmail(recipients, emailSubject, emailBody.replace(/\n/g, '<br>'));
         if (res.success) {
             alert(`Successfully sent emails to ${res.sent} recipients.`);
@@ -161,72 +109,63 @@ export const AdminDashboard: React.FC = () => {
   };
 
   const handleExportCSV = () => {
-    const headers = ['ID', 'Email', 'Full Name', 'Status', 'Submitted At', 'Wave', 'Twitter'];
-    const rows = apps.map(app => [
-        app.id,
-        app.email,
-        app.fullName,
-        app.status,
-        app.submittedAt,
-        app.wave || '',
-        app.twitterHandle || ''
+    if (members.length === 0) return;
+    const headers = ['fullName', 'email', 'telegramUsername', 'discordUsername', 'xUsername', 'country', 'stateRegion', 'maritalStatus', 'ageRange', 'joinTccDate', 'startWeb3JourneyDate', 'currentStatus', 'skills', 'otherSkills', 'skillLevel', 'knowledgeableTools', 'hasCertifications', 'certificationsList', 'hasPortfolio', 'portfolioLink', 'workedWithWeb3Brand', 'web3Role', 'web3Brands', 'contributionAreas', 'otherContributionAreas', 'contributionCapacity', 'inspiration', 'expectations', 'openToTeaching', 'hasNetworkAccess', 'networkDescription'];
+    const rows = members.map(m => [
+        m.fullName, m.email, m.telegramUsername, m.discordUsername, m.xUsername, m.country, m.stateRegion, m.maritalStatus, m.ageRange, m.joinTccDate, m.startWeb3JourneyDate, m.currentStatus, (m.skills || []).join('|'), m.otherSkills, m.skillLevel, m.knowledgeableTools, m.hasCertifications, m.certificationsList, m.hasPortfolio, m.portfolioLink, m.workedWithWeb3Brand, m.web3Role, m.web3Brands, (m.contributionAreas || []).join('|'), m.otherContributionAreas, m.contributionCapacity, m.inspiration, m.expectations, m.openToTeaching, m.hasNetworkAccess, m.networkDescription
     ]);
-    
-    const csvContent = "data:text/csv;charset=utf-8," 
-        + [headers, ...rows].map(e => e.join(",")).join("\n");
-        
-    const encodedUri = encodeURI(csvContent);
+
+    const escapeCsv = (val: any) => {
+        if (val == null) return '""';
+        // Replace newlines with a separator so Excel rows don't become massive
+        const str = String(val).replace(/[\n\r]+/g, ' | ');
+        return `"${str.replace(/"/g, '""')}"`;
+    };
+
+    const csvContent = [headers.map(escapeCsv), ...rows.map(r => r.map(escapeCsv))].map(e => e.join(",")).join("\n");
+
+    // Use Blob to prevent browser URI cutoff limits and prepend BOM for Excel UTF-8 support
+    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "applications_export.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleSetWave = async () => {
-    const waveStr = prompt("Enter Wave Number for selected applications (e.g. 1, 2):");
-    if (!waveStr) return;
-    const wave = parseInt(waveStr);
-    if (isNaN(wave)) return;
-
-    if (!window.confirm(`Set Wave ${wave} for ${selectedIds.size} applications?`)) return;
-    
-    try {
-        await MockService.batchSetWave(Array.from(selectedIds), wave);
-        alert("Waves updated!");
-        loadData();
-        setSelectedIds(new Set());
-    } catch (e) {
-        alert("Failed to update waves");
+    if (link.download !== undefined) { 
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", "tcc_dashboard_export.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     }
   };
 
-  const filteredApps = apps.filter(app => {
-    const matchesFilter = filter === 'all' || app.status === filter;
-    const matchesSearch = app.email.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          app.fullName.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesFilter && matchesSearch;
+  const filteredMembers = members.filter(m => {
+    if (!m) return false;
+    const search = searchTerm.toLowerCase();
+    return (m.email?.toLowerCase().includes(search) || m.fullName?.toLowerCase().includes(search) || m.telegramUsername?.toLowerCase().includes(search));
   });
 
-  // Pagination Logic
-  const totalPages = Math.ceil(filteredApps.length / itemsPerPage);
-  const paginatedApps = filteredApps.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
+  const paginatedMembers = filteredMembers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   const startRange = (currentPage - 1) * itemsPerPage + 1;
-  const endRange = Math.min(filteredApps.length, currentPage * itemsPerPage);
+  const endRange = Math.min(filteredMembers.length, currentPage * itemsPerPage);
 
   const stats = {
-    total: apps.length,
-    pending: apps.filter(a => a.status === ApplicationStatus.PENDING).length,
-    approved: apps.filter(a => a.status === ApplicationStatus.APPROVED).length,
-    rejected: apps.filter(a => a.status === ApplicationStatus.REJECTED).length
+    total: members.length,
+    recent: members.filter(m => {
+      const isRecent = new Date(m.submittedAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      return isRecent;
+    }).length,
+    withPortfolio: members.filter(m => m.hasPortfolio === 'Yes').length,
+    experienced: members.filter(m => m.workedWithWeb3Brand === 'Yes').length
   };
 
   const emailCounts = React.useMemo(() => {
     const counts: Record<string, number> = {};
-    apps.forEach(a => counts[a.email.toLowerCase()] = (counts[a.email.toLowerCase()] || 0) + 1);
+    members.forEach(m => {
+       if (m.email) counts[m.email.toLowerCase()] = (counts[m.email.toLowerCase()] || 0) + 1;
+    });
     return counts;
-  }, [apps]);
+  }, [members]);
 
   if (loading) return <div className="p-8 text-primary">Loading data...</div>;
 
@@ -234,24 +173,16 @@ export const AdminDashboard: React.FC = () => {
     <>
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-primary dark:text-accent">Application Management</h1>
-          <p className="text-ash dark:text-chalk/60 mt-1">Review and approve pending requests for class access.</p>
+          <h1 className="text-3xl font-bold text-[#3B472F] dark:text-[#FFFA7E]">Community Dashboard</h1>
+          <p className="text-ash dark:text-chalk/60 mt-1">Overview of the TCC Member Ecosystem and communications.</p>
         </div>
         <div className="flex items-center gap-3 text-sm">
           <button 
              onClick={() => navigate('/admin/members')}
-             className="flex items-center gap-2 px-4 py-2 bg-primary/20 text-primary dark:text-accent border-2 border-primary/20 rounded-lg font-bold hover:bg-primary/30 transition-all"
+             className="flex items-center gap-2 px-4 py-2 border-2 border-[#3B472F]/20 dark:border-[#FFFA7E]/20 text-[#3B472F] dark:text-[#FFFA7E] rounded-lg font-bold hover:bg-[#3B472F]/5 transition-all"
           >
              <span className="material-icons-outlined text-sm">group</span>
-             Member Directory
-          </button>
-          <button 
-             onClick={handleBatchApprove}
-             disabled={batchProcessing || stats.pending === 0}
-             className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white border-2 border-green-600 rounded-lg font-bold hover:bg-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-             <span className="material-icons-outlined text-sm">done_all</span>
-             {batchProcessing ? 'Approving...' : `Approve All (${stats.pending})`}
+             Detailed Directory
           </button>
           <button 
              onClick={() => setShowEmailModal(true)}
@@ -262,31 +193,15 @@ export const AdminDashboard: React.FC = () => {
              Message ({selectedIds.size})
           </button>
           <button 
-             onClick={handleSetWave}
-             disabled={selectedIds.size === 0}
-             className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white border-2 border-purple-600 rounded-lg font-bold hover:bg-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+             onClick={handleExportCSV}
+             className="flex items-center gap-2 px-4 py-2 bg-[#3B472F] text-white dark:bg-[#FFFA7E] dark:text-[#3B472F] rounded-lg font-semibold hover:opacity-90 transition-all shadow-lg shadow-[#3B472F]/20"
           >
-             <span className="material-icons-outlined text-sm">waves</span>
-             Set Wave
-          </button>
-          <button 
-             onClick={handleTriggerReminders}
-             disabled={reminding}
-             className="flex items-center gap-2 px-4 py-2 bg-accent/20 text-primary dark:text-accent border-2 border-accent rounded-lg font-semibold hover:bg-accent hover:text-primary transition-all disabled:opacity-50"
-          >
-             <span className="material-icons-outlined text-sm">notifications_active</span>
-             {reminding ? 'Sending...' : 'Send Reminders'}
-          </button>
-          <button 
-            onClick={handleExportCSV}
-            className="flex items-center gap-2 px-4 py-2 border-2 border-primary dark:border-accent text-primary dark:text-accent rounded-lg font-semibold hover:bg-primary hover:text-white dark:hover:bg-accent dark:hover:text-primary transition-all"
-          >
-            <span className="material-icons-outlined text-sm">download</span>
-            Export List
+             <span className="material-icons-outlined text-sm">download</span>
+             Quick Export
           </button>
           <button 
             onClick={toggleTheme}
-            className="p-2 bg-white dark:bg-ash/20 rounded-lg text-primary dark:text-accent hover:bg-gray-50 dark:hover:bg-ash/30 transition-colors"
+            className="p-2 bg-white dark:bg-ash/20 rounded-lg text-[#3B472F] dark:text-[#FFFA7E] hover:bg-gray-50 dark:hover:bg-ash/30 transition-colors border border-[#3B472F]/10 dark:border-white/10"
           >
             <span className="material-icons-outlined">{isDark ? 'light_mode' : 'dark_mode'}</span>
           </button>
@@ -295,39 +210,21 @@ export const AdminDashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-white dark:bg-white/5 p-6 rounded-2xl shadow-sm border border-chalk dark:border-white/10">
-          <p className="text-ash dark:text-chalk/60 text-sm font-medium">Total Submissions</p>
+          <p className="text-ash dark:text-chalk/60 text-sm font-medium">Total Community Members</p>
           <p className="text-3xl font-bold text-[#3B472F] dark:text-white mt-2">{stats.total}</p>
         </div>
         <div className="bg-[#FFFA7E]/20 dark:bg-[#FFFA7E]/10 p-6 rounded-2xl shadow-sm border border-[#FFFA7E]/30">
-          <p className="text-ash dark:text-chalk/60 text-sm font-medium">Pending Review</p>
-          <p className="text-3xl font-bold text-[#3B472F] dark:text-[#FFFA7E] mt-2">{stats.pending}</p>
+          <p className="text-ash dark:text-chalk/60 text-sm font-medium">Joined Last 7 Days</p>
+          <p className="text-3xl font-bold text-[#3B472F] dark:text-[#FFFA7E] mt-2">+{stats.recent}</p>
         </div>
         <div className="bg-green-100 dark:bg-green-900/20 p-6 rounded-2xl shadow-sm border border-green-200 dark:border-green-800/30">
-          <p className="text-ash dark:text-chalk/60 text-sm font-medium">Approved Total</p>
-          <p className="text-3xl font-bold text-[#3B472F] dark:text-green-400 mt-2">{stats.approved}</p>
+          <p className="text-ash dark:text-chalk/60 text-sm font-medium">Has Portfolio</p>
+          <p className="text-3xl font-bold text-[#3B472F] dark:text-green-400 mt-2">{stats.withPortfolio}</p>
         </div>
-        <div className="bg-red-500/10 dark:bg-red-500/5 p-6 rounded-2xl shadow-sm border border-red-500/20">
-          <p className="text-ash dark:text-chalk/60 text-sm font-medium">Rejected Total</p>
-          <p className="text-3xl font-bold text-[#3B472F] dark:text-red-400 mt-2">{stats.rejected}</p>
+        <div className="bg-blue-100 dark:bg-blue-900/20 p-6 rounded-2xl shadow-sm border border-blue-200 dark:border-blue-800/30">
+          <p className="text-ash dark:text-chalk/60 text-sm font-medium">Web3 Brand XP</p>
+          <p className="text-3xl font-bold text-[#3B472F] dark:text-blue-400 mt-2">{stats.experienced}</p>
         </div>
-      </div>
-
-      {/* Recent Onboarding Responses Quick Link */}
-      <div className="mb-8 p-6 bg-gradient-to-r from-[#3B472F] to-[#4a5a3a] rounded-2xl shadow-lg text-white flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-              <span className="material-icons-outlined text-8xl">assignment_ind</span>
-          </div>
-          <div className="relative z-10">
-              <h2 className="text-xl font-bold mb-1">Onboarding Responses</h2>
-              <p className="text-white/70 text-sm max-w-lg">Track and view detailed intake data from approved members who have completed their profile onboarding.</p>
-          </div>
-          <button 
-              onClick={() => navigate('/admin/members')}
-              className="relative z-10 px-6 py-3 bg-[#FFFA7E] text-[#3B472F] rounded-xl font-bold hover:scale-105 transition-all text-sm flex items-center gap-2 whitespace-nowrap"
-          >
-              <span className="material-icons-outlined">open_in_new</span>
-              View All Responses
-          </button>
       </div>
 
       <div className="bg-white dark:bg-white/5 rounded-2xl shadow-sm border border-chalk dark:border-white/10 overflow-hidden">
@@ -335,39 +232,12 @@ export const AdminDashboard: React.FC = () => {
           <div className="relative w-full md:w-96">
             <span className="material-icons-outlined absolute left-3 top-2.5 text-ash dark:text-chalk/40">search</span>
             <input 
-                className="w-full pl-10 pr-4 py-2 bg-chalk/50 dark:bg-white/5 border-none rounded-lg focus:ring-2 focus:ring-primary dark:focus:ring-accent transition-all text-sm text-primary dark:text-chalk placeholder-ash/50 dark:placeholder-chalk/30" 
-                placeholder="Search by email or name..." 
+                className="w-full pl-10 pr-4 py-2 bg-chalk/50 dark:bg-white/5 border-none rounded-lg focus:ring-2 focus:ring-[#3B472F] dark:focus:ring-[#FFFA7E] transition-all text-sm text-[#3B472F] dark:text-chalk placeholder-ash/50 dark:placeholder-chalk/30" 
+                placeholder="Search by email, name, telegram..." 
                 type="text"
                 value={searchTerm}
                 onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
             />
-          </div>
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0">
-            <span className="text-xs font-bold uppercase tracking-wider text-ash/60 mr-2">Filter:</span>
-            <button 
-                onClick={() => { setFilter('all'); setCurrentPage(1); }} 
-                className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${filter === 'all' ? 'bg-primary text-white' : 'bg-chalk dark:bg-white/10 text-ash dark:text-chalk hover:bg-chalk/80'}`}
-            >
-                All
-            </button>
-            <button 
-                onClick={() => { setFilter(ApplicationStatus.PENDING); setCurrentPage(1); }} 
-                className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${filter === ApplicationStatus.PENDING ? 'bg-primary text-white' : 'bg-chalk dark:bg-white/10 text-ash dark:text-chalk hover:bg-chalk/80'}`}
-            >
-                Pending
-            </button>
-            <button 
-                onClick={() => { setFilter(ApplicationStatus.APPROVED); setCurrentPage(1); }} 
-                className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${filter === ApplicationStatus.APPROVED ? 'bg-primary text-white' : 'bg-chalk dark:bg-white/10 text-ash dark:text-chalk hover:bg-chalk/80'}`}
-            >
-                Approved
-            </button>
-            <button 
-                onClick={() => { setFilter(ApplicationStatus.REJECTED); setCurrentPage(1); }} 
-                className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${filter === ApplicationStatus.REJECTED ? 'bg-primary text-white' : 'bg-chalk dark:bg-white/10 text-ash dark:text-chalk hover:bg-chalk/80'}`}
-            >
-                Rejected
-            </button>
           </div>
         </div>
         
@@ -379,104 +249,63 @@ export const AdminDashboard: React.FC = () => {
                     <input 
                         type="checkbox" 
                         onChange={handleSelectAll} 
-                        checked={filteredApps.length > 0 && selectedIds.size === filteredApps.length}
-                        className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                        checked={filteredMembers.length > 0 && selectedIds.size === filteredMembers.length}
+                        className="w-4 h-4 rounded border-gray-300 text-[#3B472F] focus:ring-[#3B472F]"
                     />
                 </th>
-                <th className="px-6 py-4">Applicant Email</th>
-                <th className="px-6 py-4">Wave</th>
+                <th className="px-6 py-4">Member Data</th>
+                <th className="px-6 py-4">Location</th>
                 <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4">Submission Date</th>
-                <th className="px-6 py-4 text-right">Actions</th>
+                <th className="px-6 py-4">Registration Date</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-chalk dark:divide-white/10">
-              {paginatedApps.length === 0 ? (
-                 <tr><td colSpan={5} className="p-8 text-center text-ash dark:text-chalk/50">No applications found.</td></tr>
-              ) : paginatedApps.map(app => (
-                  <tr key={app.id} className="hover:bg-chalk/10 dark:hover:bg-white/5 transition-colors">
+              {paginatedMembers.length === 0 ? (
+                 <tr><td colSpan={5} className="p-8 text-center text-ash dark:text-chalk/50">No members found.</td></tr>
+              ) : paginatedMembers.map(member => (
+                  <tr key={member.id} className="hover:bg-chalk/10 dark:hover:bg-white/5 transition-colors">
                     <td className="px-6 py-5">
                         <input 
                             type="checkbox" 
-                            checked={selectedIds.has(app.id)} 
-                            onChange={() => handleSelectOne(app.id)}
-                            className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                            checked={selectedIds.has(member.id)} 
+                            onChange={() => handleSelectOne(member.id)}
+                            className="w-4 h-4 rounded border-gray-300 text-[#3B472F] focus:ring-[#3B472F]"
                         />
                     </td>
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary dark:text-accent font-bold text-xs uppercase">
-                            {app.fullName.substring(0, 2)}
+                        <div className="w-10 h-10 rounded-full bg-[#3B472F]/10 flex items-center justify-center text-[#3B472F] dark:text-[#FFFA7E] font-bold text-sm uppercase">
+                            {(member.fullName || 'M').substring(0, 2)}
                         </div>
                         <div className="flex flex-col">
                             <div className="flex items-center gap-1">
-                                <span className="font-medium text-primary dark:text-chalk">{app.email}</span>
-                                {emailCounts[app.email.toLowerCase()] > 1 && (
+                                <span className="font-bold text-[#3B472F] dark:text-chalk">{member.fullName}</span>
+                                {member.email && emailCounts[member.email.toLowerCase()] > 1 && (
                                     <div className="group relative">
                                         <span className="material-icons-outlined text-amber-500 text-sm cursor-help">warning</span>
                                         <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 w-48 bg-gray-900 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
-                                            Duplicate Email ({emailCounts[app.email.toLowerCase()]} submissions)
+                                            Duplicate Email ({emailCounts[member.email.toLowerCase()]} submissions)
                                         </div>
                                     </div>
                                 )}
                             </div>
-                            <span className="text-xs text-ash/60 dark:text-chalk/40">{app.fullName}</span>
+                            <span className="text-xs text-ash/60 dark:text-chalk/40 mt-0.5">{member.email}</span>
+                            <span className="text-xs text-[#3B472F]/60 dark:text-[#FFFA7E]/60 font-medium">TG: {member.telegramUsername}</span>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-5">
-                        {app.wave ? (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
-                                Wave {app.wave}
-                            </span>
-                        ) : (
-                            <span className="text-xs text-ash/40 dark:text-chalk/30">-</span>
-                        )}
+                        <span className="text-sm font-medium text-ash dark:text-white/80">{member.country}</span><br/>
+                        <span className="text-xs text-ash/60 dark:text-white/40">{member.stateRegion}</span>
                     </td>
                     <td className="px-6 py-5">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold
-                           ${app.status === ApplicationStatus.APPROVED ? 'bg-green-100 dark:bg-eucalyptus/20 text-green-800 dark:text-eucalyptus' : 
-                             app.status === ApplicationStatus.REJECTED ? 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400' : 
-                             'bg-yellow-100 dark:bg-accent/20 text-yellow-800 dark:text-accent'}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${
-                             app.status === ApplicationStatus.APPROVED ? 'bg-green-500 dark:bg-eucalyptus' : 
-                             app.status === ApplicationStatus.REJECTED ? 'bg-red-500' : 
-                             'bg-yellow-500 dark:bg-accent'}`}></span>
-                        {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-100 dark:bg-eucalyptus/20 text-green-800 dark:text-eucalyptus">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 dark:bg-eucalyptus"></span>
+                        Active
                       </span>
                     </td>
-                    <td className="px-6 py-5 text-sm text-ash dark:text-chalk/60">
-                        {new Date(app.submittedAt).toLocaleDateString()} • {new Date(app.submittedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                    </td>
-                    <td className="px-6 py-5 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {app.status === ApplicationStatus.PENDING ? (
-                            <button 
-                                onClick={() => handleStatusUpdate(app.id, ApplicationStatus.APPROVED)}
-                                className="px-4 py-1.5 bg-primary text-white rounded-lg text-xs font-bold hover:opacity-90 transition-opacity"
-                            >
-                                Approve
-                            </button>
-                        ) : (
-                            <span className="text-xs italic text-ash/40 dark:text-chalk/30 mr-2">
-                                {app.status === ApplicationStatus.APPROVED ? 'Code Sent' : 'Rejected'}
-                            </span>
-                        )}
-                        <Link 
-                            to={`/admin/applications/${app.id}`}
-                            className="p-1.5 text-ash dark:text-chalk/40 hover:text-primary dark:hover:text-accent transition-colors"
-                        >
-                             <span className="material-icons-outlined text-lg">visibility</span>
-                        </Link>
-                        {app.status === ApplicationStatus.PENDING && (
-                            <button 
-                                onClick={() => handleStatusUpdate(app.id, ApplicationStatus.REJECTED)}
-                                className="p-1.5 text-ash dark:text-chalk/40 hover:text-red-500 transition-colors"
-                            >
-                                <span className="material-icons-outlined text-lg">delete_outline</span>
-                            </button>
-                        )}
-                      </div>
+                    <td className="px-6 py-5 text-sm font-medium text-ash dark:text-chalk/60">
+                        {new Date(member.submittedAt).toLocaleDateString()}
                     </td>
                   </tr>
               ))}
@@ -485,8 +314,8 @@ export const AdminDashboard: React.FC = () => {
         </div>
         
         <div className="p-6 border-t border-chalk dark:border-white/10 flex items-center justify-between">
-          <p className="text-xs text-ash/60 dark:text-chalk/40">
-             Showing {paginatedApps.length > 0 ? startRange : 0}-{endRange} of {filteredApps.length} applications
+          <p className="text-xs font-medium text-ash/60 dark:text-chalk/40">
+             Showing {paginatedMembers.length > 0 ? startRange : 0} - {endRange} of {filteredMembers.length} members
           </p>
           <div className="flex items-center gap-2">
             <button 
@@ -508,103 +337,102 @@ export const AdminDashboard: React.FC = () => {
       </div>
       {/* Email Modal */}
       {showEmailModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="p-6 border-b border-gray-100 dark:border-white/10 flex justify-between items-center">
-              <h3 className="text-xl font-bold text-primary dark:text-white">Send Message</h3>
-              <button onClick={() => setShowEmailModal(false)} className="text-ash/50 hover:text-red-500">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-[#1a1a1a] rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl border border-white/10">
+            <div className="p-6 border-b border-gray-100 dark:border-white/10 flex justify-between items-center bg-gray-50/50 dark:bg-white/5">
+              <h3 className="text-xl font-bold text-[#3B472F] dark:text-[#FFFA7E]">Compose Mass Broadcast</h3>
+              <button onClick={() => setShowEmailModal(false)} className="p-2 rounded-full hover:bg-chalk dark:hover:bg-white/10 text-ash transition-colors">
                 <span className="material-icons-outlined">close</span>
               </button>
             </div>
             
-            <div className="p-6 space-y-6">
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800/50">
-                <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-bold text-blue-800 dark:text-blue-300">Recipients ({selectedIds.size})</span>
+            <div className="p-8 space-y-6">
+              <div className="bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-800/30">
+                <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-bold text-blue-800 dark:text-blue-300">Selected Recipients ({selectedIds.size})</span>
                     <button 
                         onClick={() => setSelectedIds(new Set())}
-                        className="text-xs text-blue-600 hover:underline"
+                        className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors"
                     >
                         Clear Selection
                     </button>
                 </div>
-                <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
-                    {Array.from(selectedIds).slice(0, 10).map(id => {
-                        const app = apps.find(a => a.id === id);
+                <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto custom-scrollbar">
+                    {Array.from(selectedIds).slice(0, 15).map(id => {
+                        const m = members.find(a => a.id === id);
                         return (
-                            <span key={id} className="text-xs bg-white dark:bg-white/10 px-2 py-1 rounded border border-blue-200 dark:border-white/10 text-blue-700 dark:text-blue-200">
-                                {app?.email}
+                            <span key={id} className="text-[10px] bg-white dark:bg-white/10 px-2 py-1 rounded border border-blue-200 dark:border-white/10 text-blue-700 dark:text-blue-200 font-medium">
+                                {m?.email}
                             </span>
                         );
                     })}
-                    {selectedIds.size > 10 && (
-                        <span className="text-xs text-blue-500 italic flex items-center px-2">
-                            +{selectedIds.size - 10} more
+                    {selectedIds.size > 15 && (
+                        <span className="text-[10px] text-blue-500 font-bold flex items-center px-2">
+                            +{selectedIds.size - 15} more
                         </span>
                     )}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-ash/70 dark:text-chalk/60 mb-2">Load Template</label>
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-ash/70 dark:text-chalk/60 mb-3">Quick Templates</label>
                 <div className="flex gap-2">
-                    <button onClick={() => applyTemplate('reminder')} className="px-3 py-1 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 rounded text-xs font-medium transition-colors border border-gray-200 dark:border-white/10 text-primary dark:text-chalk">
-                        Assignment Reminder
+                    <button onClick={() => applyTemplate('welcome')} className="px-4 py-2 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 rounded-lg text-xs font-bold transition-colors border border-gray-200 dark:border-white/10 text-[#3B472F] dark:text-chalk">
+                        Welcome Email
                     </button>
-                    <button onClick={() => applyTemplate('start')} className="px-3 py-1 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 rounded text-xs font-medium transition-colors border border-gray-200 dark:border-white/10 text-primary dark:text-chalk">
-                        Class Starting
+                    <button onClick={() => applyTemplate('event')} className="px-4 py-2 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 rounded-lg text-xs font-bold transition-colors border border-gray-200 dark:border-white/10 text-[#3B472F] dark:text-chalk">
+                        Event Reminder
                     </button>
-                    <button onClick={() => applyTemplate('general')} className="px-3 py-1 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 rounded text-xs font-medium transition-colors border border-gray-200 dark:border-white/10 text-primary dark:text-chalk">
-                        General
+                    <button onClick={() => applyTemplate('general')} className="px-4 py-2 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 rounded-lg text-xs font-bold transition-colors border border-gray-200 dark:border-white/10 text-[#3B472F] dark:text-chalk">
+                        General Announce
                     </button>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-ash/70 dark:text-chalk/60 mb-2">Subject</label>
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-ash/70 dark:text-chalk/60 mb-2">Subject Line</label>
                 <input 
                     type="text" 
-                    className="w-full px-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg focus:ring-2 focus:ring-primary dark:focus:ring-accent text-primary dark:text-chalk"
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#3B472F] dark:focus:ring-[#FFFA7E] transition-all text-sm text-[#3B472F] dark:text-chalk"
                     value={emailSubject}
                     onChange={(e) => setEmailSubject(e.target.value)}
-                    placeholder="Email Subject"
+                    placeholder="Enter email subject"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-ash/70 dark:text-chalk/60 mb-2">Message Body</label>
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-ash/70 dark:text-chalk/60 mb-2">Message Body</label>
                 <textarea 
                     rows={8}
-                    className="w-full px-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg focus:ring-2 focus:ring-primary dark:focus:ring-accent text-primary dark:text-chalk resize-none font-mono text-sm"
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#3B472F] dark:focus:ring-[#FFFA7E] transition-all text-[#3B472F] dark:text-chalk resize-none font-medium text-sm"
                     value={emailBody}
                     onChange={(e) => setEmailBody(e.target.value)}
-                    placeholder="Write your message here... (HTML tags supported)"
+                    placeholder="Write your broadcast message here... (Standard HTML supported)"
                 />
-                <p className="text-xs text-ash/50 mt-2 text-right">Preview not available. Sent as HTML.</p>
               </div>
             </div>
 
-            <div className="p-6 border-t border-gray-100 dark:border-white/10 flex justify-end gap-3">
+            <div className="p-6 border-t border-gray-100 dark:border-white/10 flex justify-end gap-3 bg-gray-50/50 dark:bg-white/5">
               <button 
                 onClick={() => setShowEmailModal(false)}
-                className="px-4 py-2 text-ash hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg font-bold transition-colors"
+                className="px-6 py-2 text-ash hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl font-bold transition-colors"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleSendBatchEmail}
                 disabled={sendingEmail || !emailSubject || !emailBody}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                className="px-8 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-blue-600/20"
               >
                 {sendingEmail ? (
                     <>
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        Sending...
+                        Broadcasting...
                     </>
                 ) : (
                     <>
                         <span className="material-icons-outlined text-sm">send</span>
-                        Send Message
+                        Send Now
                     </>
                 )}
               </button>
@@ -612,6 +440,11 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
       )}
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(59, 71, 47, 0.2); border-radius: 10px; }
+      `}</style>
     </>
   );
 };

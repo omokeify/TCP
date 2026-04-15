@@ -12,6 +12,13 @@ export const MemberDirectory: React.FC = () => {
 
   const [selectedMember, setSelectedMember] = useState<MemberOnboarding | null>(null);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 20;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
   useEffect(() => {
     if (document.documentElement.classList.contains('dark')) {
       setIsDark(true);
@@ -74,16 +81,27 @@ export const MemberDirectory: React.FC = () => {
         m.fullName, m.email, m.telegramUsername, m.discordUsername, m.xUsername, m.country, m.stateRegion, m.maritalStatus, m.ageRange, m.joinTccDate, m.startWeb3JourneyDate, m.currentStatus, (m.skills || []).join('|'), m.otherSkills, m.skillLevel, m.knowledgeableTools, m.hasCertifications, m.certificationsList, m.hasPortfolio, m.portfolioLink, m.workedWithWeb3Brand, m.web3Role, m.web3Brands, (m.contributionAreas || []).join('|'), m.otherContributionAreas, m.contributionCapacity, m.inspiration, m.expectations, m.openToTeaching, m.hasNetworkAccess, m.networkDescription
     ]);
     
-    const csvContent = "data:text/csv;charset=utf-8," 
-        + [headers, ...rows].map(e => e.join(",")).join("\n");
+    const escapeCsv = (val: any) => {
+        if (val == null) return '""';
+        // Replace newlines with a separator so Excel rows don't become massive
+        const str = String(val).replace(/[\n\r]+/g, ' | ');
+        return `"${str.replace(/"/g, '""')}"`;
+    };
+
+    const csvContent = [headers.map(escapeCsv), ...rows.map(r => r.map(escapeCsv))].map(e => e.join(",")).join("\n");
         
-    const encodedUri = encodeURI(csvContent);
+    // Use Blob to prevent browser URI cutoff limits and prepend BOM for Excel UTF-8 support
+    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "tcc_members_full_export.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    if (link.download !== undefined) { 
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", "tcc_members_full_export.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
   };
 
   const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,6 +153,10 @@ export const MemberDirectory: React.FC = () => {
     e.target.value = '';
   };
 
+  const totalPages = Math.ceil(filteredMembers.length / rowsPerPage);
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const paginatedMembers = filteredMembers.slice(startIndex, startIndex + rowsPerPage);
+
   if (loading) return <div className="p-8 text-[#3B472F] dark:text-[#FFFA7E]">Processing data...</div>;
 
   return (
@@ -145,12 +167,6 @@ export const MemberDirectory: React.FC = () => {
           <p className="text-[#686868] dark:text-white/60 mt-1">View detailed profiles and onboarding responses from TCC members.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button 
-             onClick={() => navigate('/admin/applications')}
-             className="px-4 py-2 border-2 border-[#3B472F]/20 dark:border-[#FFFA7E]/20 text-[#3B472F] dark:text-[#FFFA7E] rounded-lg font-semibold hover:bg-[#3B472F]/5 transition-all"
-          >
-             Applications
-          </button>
           <label className="flex items-center gap-2 px-4 py-2 bg-[#3B472F] text-white dark:bg-[#FFFA7E] dark:text-[#3B472F] rounded-lg font-semibold hover:opacity-90 transition-all cursor-pointer shadow-lg shadow-[#3B472F]/20">
             <span className="material-icons-outlined text-sm">upload</span>
             Import CSV
@@ -202,9 +218,9 @@ export const MemberDirectory: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-chalk dark:divide-white/10">
-              {filteredMembers.length === 0 ? (
+              {paginatedMembers.length === 0 ? (
                 <tr><td colSpan={6} className="p-12 text-center text-ash dark:text-white/50">No members found in the directory.</td></tr>
-              ) : filteredMembers.map(member => (
+              ) : paginatedMembers.map(member => (
                 <tr key={member.id} className="hover:bg-chalk/10 dark:hover:bg-white/5 transition-colors">
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-3">
@@ -258,6 +274,30 @@ export const MemberDirectory: React.FC = () => {
               ))}
             </tbody>
           </table>
+        </div>
+        
+        {/* Pagination Controls */}
+        <div className="p-4 border-t border-chalk dark:border-white/10 flex items-center justify-between">
+            <span className="text-sm text-ash dark:text-white/60">
+              Showing {filteredMembers.length === 0 ? 0 : startIndex + 1} to {Math.min(startIndex + rowsPerPage, filteredMembers.length)} of {filteredMembers.length} members
+            </span>
+            <div className="flex items-center gap-2">
+              <button 
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                className="px-3 py-1 bg-white dark:bg-white/5 text-[#3B472F] dark:text-[#FFFA7E] rounded-lg border border-[#3B472F]/20 dark:border-white/10 disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors text-sm font-medium"
+              >
+                Prev
+              </button>
+              <span className="text-sm font-medium text-[#3B472F] dark:text-white">Page {currentPage} of {totalPages || 1}</span>
+              <button 
+                disabled={currentPage === totalPages || totalPages === 0}
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                className="px-3 py-1 bg-white dark:bg-white/5 text-[#3B472F] dark:text-[#FFFA7E] rounded-lg border border-[#3B472F]/20 dark:border-white/10 disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors text-sm font-medium"
+              >
+                Next
+              </button>
+            </div>
         </div>
       </div>
 
@@ -335,7 +375,7 @@ export const MemberDirectory: React.FC = () => {
                                 <div>
                                     <p className="text-[10px] text-ash uppercase font-bold mb-2">Core Skills</p>
                                     <div className="flex flex-wrap gap-2">
-                                        {selectedMember.skills.map((s, i) => (
+                                        {(selectedMember.skills || []).map((s, i) => (
                                             <span key={i} className="px-3 py-1 bg-[#3B472F]/5 dark:bg-[#FFFA7E]/5 text-[#3B472F] dark:text-[#FFFA7E] rounded-full text-xs border border-[#3B472F]/10">
                                                 {s}
                                             </span>
@@ -378,7 +418,7 @@ export const MemberDirectory: React.FC = () => {
                                 <div>
                                     <p className="text-[10px] text-ash uppercase font-bold mb-2">Interest Areas</p>
                                     <div className="flex flex-wrap gap-2">
-                                        {selectedMember.contributionAreas.map((a, i) => (
+                                        {(selectedMember.contributionAreas || []).map((a, i) => (
                                             <span key={i} className="px-3 py-1 bg-blue-500/5 text-blue-600 dark:text-blue-400 rounded-full text-xs border border-blue-500/10">
                                                 {a}
                                             </span>

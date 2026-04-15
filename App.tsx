@@ -11,10 +11,8 @@ const QuestBoard = lazy(() => import('./pages/QuestBoard').then(module => ({ def
 const QuestDetail = lazy(() => import('./pages/QuestDetail').then(module => ({ default: module.QuestDetail })));
 const Onboarding = lazy(() => import('./pages/Onboarding').then(module => ({ default: module.Onboarding })));
 
-// Admin Pages
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin').then(module => ({ default: module.AdminLogin })));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
-const ApplicationDetail = lazy(() => import('./pages/admin/ApplicationDetail').then(module => ({ default: module.ApplicationDetail })));
 const AdminSettings = lazy(() => import('./pages/admin/AdminSettings').then(module => ({ default: module.AdminSettings })));
 const ProofReview = lazy(() => import('./pages/admin/ProofReview').then(module => ({ default: module.ProofReview })));
 const MemberDirectory = lazy(() => import('./pages/admin/MemberDirectory').then(module => ({ default: module.MemberDirectory })));
@@ -46,10 +44,9 @@ function App() {
             <Route path="/content" element={<Navigate to="/portal" replace />} />
 
             {/* Admin Flow */}
-            <Route path="/admin" element={<Navigate to="/admin/applications" replace />} />
+            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin/applications" element={<AdminDashboard />} />
-            <Route path="/admin/applications/:id" element={<ApplicationDetail />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/admin/members" element={<MemberDirectory />} />
             <Route path="/admin/proofs" element={<ProofReview />} />
