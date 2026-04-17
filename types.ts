@@ -276,6 +276,9 @@ export interface MemberOnboarding {
   stateRegion: string;
   maritalStatus: 'Single' | 'Married' | 'Prefer not to say';
   ageRange: 'Below 20' | '20–30' | '30–40' | '40 & above';
+  dobDay?: string;
+  dobMonth?: string;
+  dobYear?: string;
   howLongInTcc: string;
   joinTccDate: string; // ISO date or MM-YYYY
   startWeb3JourneyDate: string; // ISO date or MM-YYYY

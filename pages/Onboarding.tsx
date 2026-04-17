@@ -70,6 +70,9 @@ export const Onboarding: React.FC = () => {
     skillLevel: 3,
     maritalStatus: 'Single',
     ageRange: '20–30',
+    dobDay: '',
+    dobMonth: '',
+    dobYear: '',
     hasCertifications: 'No',
     hasPortfolio: 'No',
     workedWithWeb3Brand: 'No',
@@ -93,6 +96,7 @@ export const Onboarding: React.FC = () => {
     } else if (step === 1) {
       if (!formData.country) newErrors.country = 'Required';
       if (!formData.stateRegion) newErrors.stateRegion = 'Required';
+      if (!formData.dobMonth || !formData.dobDay) newErrors.dob = 'Month and Day are required';
     } else if (step === 2) {
       if (!formData.howLongInTcc) newErrors.howLongInTcc = 'Required';
       if (!formData.joinTccDate) newErrors.joinTccDate = 'Required';
@@ -334,6 +338,43 @@ export const Onboarding: React.FC = () => {
                     </label>
                   ))}
                 </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-bold text-[#3B472F] mb-2">Birthday <span className="text-red-500">*</span></label>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <select 
+                      name="dobMonth" value={formData.dobMonth || ''} onChange={handleInputChange}
+                      className={`w-full p-3 rounded-xl border ${errors.dob ? 'border-red-500' : 'border-[#FFFA7E]'} bg-white/50 focus:outline-none focus:ring-2 focus:ring-[#3B472F]/20 text-sm`}
+                    >
+                      <option value="">Month</option>
+                      {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <select 
+                      name="dobDay" value={formData.dobDay || ''} onChange={handleInputChange}
+                      className={`w-full p-3 rounded-xl border ${errors.dob ? 'border-red-500' : 'border-[#FFFA7E]'} bg-white/50 focus:outline-none focus:ring-2 focus:ring-[#3B472F]/20 text-sm`}
+                    >
+                      <option value="">Day</option>
+                      {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <input 
+                      type="number" name="dobYear" value={formData.dobYear || ''} onChange={handleInputChange}
+                      placeholder="Year"
+                      className="w-full p-3 rounded-xl border border-[#FFFA7E] bg-white/50 focus:outline-none focus:ring-2 focus:ring-[#3B472F]/20 text-sm"
+                    />
+                  </div>
+                </div>
+                {errors.dob && <p className="text-red-500 text-[10px] mt-1 font-bold italic">{errors.dob}</p>}
+                <p className="text-[10px] text-[#686868] mt-1 italic pl-1">Year is optional. Month and Day are required.</p>
               </div>
             </div>
           </div>

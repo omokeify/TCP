@@ -76,9 +76,9 @@ export const MemberDirectory: React.FC = () => {
 
   const handleExportCSV = () => {
     if (members.length === 0) return;
-    const headers = ['fullName', 'email', 'telegramUsername', 'discordUsername', 'xUsername', 'country', 'stateRegion', 'maritalStatus', 'ageRange', 'joinTccDate', 'startWeb3JourneyDate', 'currentStatus', 'skills', 'otherSkills', 'skillLevel', 'knowledgeableTools', 'hasCertifications', 'certificationsList', 'hasPortfolio', 'portfolioLink', 'workedWithWeb3Brand', 'web3Role', 'web3Brands', 'contributionAreas', 'otherContributionAreas', 'contributionCapacity', 'inspiration', 'expectations', 'openToTeaching', 'hasNetworkAccess', 'networkDescription'];
+    const headers = ['fullName', 'email', 'telegramUsername', 'discordUsername', 'xUsername', 'country', 'stateRegion', 'maritalStatus', 'ageRange', 'dobDay', 'dobMonth', 'dobYear', 'joinTccDate', 'startWeb3JourneyDate', 'currentStatus', 'skills', 'otherSkills', 'skillLevel', 'knowledgeableTools', 'hasCertifications', 'certificationsList', 'hasPortfolio', 'portfolioLink', 'workedWithWeb3Brand', 'web3Role', 'web3Brands', 'contributionAreas', 'otherContributionAreas', 'contributionCapacity', 'inspiration', 'expectations', 'openToTeaching', 'hasNetworkAccess', 'networkDescription'];
     const rows = members.map(m => [
-        m.fullName, m.email, m.telegramUsername, m.discordUsername, m.xUsername, m.country, m.stateRegion, m.maritalStatus, m.ageRange, m.joinTccDate, m.startWeb3JourneyDate, m.currentStatus, (m.skills || []).join('|'), m.otherSkills, m.skillLevel, m.knowledgeableTools, m.hasCertifications, m.certificationsList, m.hasPortfolio, m.portfolioLink, m.workedWithWeb3Brand, m.web3Role, m.web3Brands, (m.contributionAreas || []).join('|'), m.otherContributionAreas, m.contributionCapacity, m.inspiration, m.expectations, m.openToTeaching, m.hasNetworkAccess, m.networkDescription
+        m.fullName, m.email, m.telegramUsername, m.discordUsername, m.xUsername, m.country, m.stateRegion, m.maritalStatus, m.ageRange, m.dobDay, m.dobMonth, m.dobYear, m.joinTccDate, m.startWeb3JourneyDate, m.currentStatus, (m.skills || []).join('|'), m.otherSkills, m.skillLevel, m.knowledgeableTools, m.hasCertifications, m.certificationsList, m.hasPortfolio, m.portfolioLink, m.workedWithWeb3Brand, m.web3Role, m.web3Brands, (m.contributionAreas || []).join('|'), m.otherContributionAreas, m.contributionCapacity, m.inspiration, m.expectations, m.openToTeaching, m.hasNetworkAccess, m.networkDescription
     ]);
     
     const escapeCsv = (val: any) => {
@@ -348,6 +348,10 @@ export const MemberDirectory: React.FC = () => {
                             <div className="grid grid-cols-2 gap-4">
                                 <DetailItem label="Marital Status" value={selectedMember.maritalStatus} />
                                 <DetailItem label="Age Range" value={selectedMember.ageRange} />
+                                <DetailItem 
+                                    label="Birthday" 
+                                    value={selectedMember.dobDay || selectedMember.dobMonth ? `${selectedMember.dobDay || ''} ${selectedMember.dobMonth || ''} ${selectedMember.dobYear || ''}`.trim() : 'N/A'} 
+                                />
                             </div>
                         </section>
 
